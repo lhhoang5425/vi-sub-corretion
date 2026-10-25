@@ -20,10 +20,10 @@ from ..data_processing.dataset_loader import load_correction_dataset, prepare_se
 
 def parse_args():
     parser = argparse.ArgumentParser(description="Huấn luyện mô hình Seq2Seq sửa lỗi phụ đề tiếng Việt")
-    parser.add_argument("--model_name", type=str, default="VietAI/vit5-base", help="Model nền (VietAI/vit5-base hoặc vinai/bartpho-syllable)")
+    parser.add_argument("--model_name", type=str, default="vinai/bartpho-syllable", help="Model nền (vinai/bartpho-syllable hoặc bmd1905/vietnamese-correction-v2)")
     parser.add_argument("--train_file", type=str, default="data/synthetic/train.jsonl", help="Đường dẫn file train")
     parser.add_argument("--val_file", type=str, default="data/synthetic/val.jsonl", help="Đường dẫn file validation")
-    parser.add_argument("--output_dir", type=str, default="checkpoints/vit5-sub-corrector", help="Thư mục lưu weights")
+    parser.add_argument("--output_dir", type=str, default="checkpoints/bartpho-sub-corrector", help="Thư mục lưu weights")
     parser.add_argument("--epochs", type=int, default=5, help="Số epoch")
     parser.add_argument("--batch_size", type=int, default=8, help="Kích thước batch")
     parser.add_argument("--lr", type=float, default=5e-5, help="Tốc độ học")
@@ -36,8 +36,13 @@ def train():
     print(f"=== BẮT ĐẦU HUẤN LUYỆN: {args.model_name} ===")
     print(f"Thiết bị: {'cuda' if torch.cuda.is_available() else 'cpu'}")
 
-    # 1. Nạp tokenizer và model
-    tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    # 1. Nạp tokenizer và model (có fallback use_fast=False khi gặp lỗi Rust Unigram)
+    try:
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name)
+    except Exception as e:
+        print(f"[Thông báo] Fast tokenizer không tương thích ({e}), chuyển sang use_fast=False...")
+        tokenizer = AutoTokenizer.from_pretrained(args.model_name, use_fast=False)
+    
     model = AutoModelForSeq2SeqLM.from_pretrained(args.model_name)
 
     # 2. Đọc dataset

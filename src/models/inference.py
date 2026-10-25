@@ -52,7 +52,10 @@ class Seq2SeqCorrector:
 
         try:
             print(f"[Seq2SeqCorrector] Đang tải mô hình: {self.model_name_or_path} trên {self.device}...")
-            self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
+            try:
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
+            except Exception:
+                self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=False)
             self.model = AutoModelForSeq2SeqLM.from_pretrained(self.model_name_or_path)
             self.model.to(self.device)
             self.model.eval()
