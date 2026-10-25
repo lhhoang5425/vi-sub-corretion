@@ -68,22 +68,26 @@ def train():
 
     data_collator = DataCollatorForSeq2Seq(tokenizer, model=model)
 
-    # 4. Cấu hình huấn luyện
-    training_args = Seq2SeqTrainingArguments(
-        output_dir=args.output_dir,
-        per_device_train_batch_size=args.batch_size,
-        per_device_eval_batch_size=args.batch_size,
-        predict_with_generate=True,
-        evaluation_strategy="epoch" if val_path.exists() else "no",
-        save_strategy="epoch",
-        learning_rate=args.lr,
-        num_train_epochs=args.epochs,
-        weight_decay=0.01,
-        save_total_limit=2,
-        fp16=torch.cuda.is_available(),
-        logging_steps=50,
-        report_to="none",
-    )
+    # 4. Cấu hình huấn luyện (Hỗ trợ cả transformers mới 'eval_strategy' và cũ 'evaluation_strategy')
+    training_kwargs = {
+        "output_dir": args.output_dir,
+        "per_device_train_batch_size": args.batch_size,
+        "per_device_eval_batch_size": args.batch_size,
+        "predict_with_generate": True,
+        "save_strategy": "epoch",
+        "learning_rate": args.lr,
+        "num_train_epochs": args.epochs,
+        "weight_decay": 0.01,
+        "save_total_limit": 2,
+        "fp16": torch.cuda.is_available(),
+        "logging_steps": 50,
+        "report_to": "none",
+    }
+    eval_val = "epoch" if val_path.exists() else "no"
+    try:
+        training_args = Seq2SeqTrainingArguments(**training_kwargs, eval_strategy=eval_val)
+    except TypeError:
+        training_args = Seq2SeqTrainingArguments(**training_kwargs, evaluation_strategy=eval_val)
 
     trainer = Seq2SeqTrainer(
         model=model,
