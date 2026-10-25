@@ -119,10 +119,60 @@ async def correct_srt_file_upload(file: UploadFile = File(...)):
 
     cleaned_srt = srt_processor.process_srt_string(srt_text)
 
+@app.post("/api/v1/srt-to-txt", response_class=PlainTextResponse)
+async def extract_txt_from_srt_endpoint(file: UploadFile = File(...)):
+    """Trích xuất văn bản thuần túy (.txt) từ tệp phụ đề .srt (loại bỏ timestamps)."""
+    if not file.filename.endswith(".srt"):
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ tệp định dạng .srt")
+
+    content = await file.read()
+    try:
+        srt_text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        srt_text = content.decode("utf-8-sig", errors="ignore")
+
+    pure_text = srt_processor.srt_to_txt(srt_text)
     return PlainTextResponse(
-        content=cleaned_srt,
+        content=pure_text,
         media_type="text/plain",
-        headers={"Content-Disposition": f"attachment; filename=cleaned_{file.filename}"},
+        headers={"Content-Disposition": f"attachment; filename={Path(file.filename).stem}.txt"},
+    )
+
+
+@app.post("/api/v1/clean-file")
+async def clean_file_endpoint(file: UploadFile = File(...), output_format: Optional[str] = "same"):
+    """Chuẩn hóa tệp văn bản: hỗ trợ cả định dạng .srt và .txt.
+    - output_format: 'same' (giữ nguyên đuôi tệp gốc), 'txt' (xuất txt thuần), hoặc 'srt' (nếu đầu vào là srt).
+    """
+    ext = Path(file.filename).suffix.lower()
+    if ext not in [".srt", ".txt"]:
+        raise HTTPException(status_code=400, detail="Chỉ hỗ trợ tệp .srt hoặc .txt")
+
+    content = await file.read()
+    try:
+        raw_text = content.decode("utf-8")
+    except UnicodeDecodeError:
+        raw_text = content.decode("utf-8-sig", errors="ignore")
+
+    if ext == ".srt":
+        cleaned_srt = srt_processor.process_srt_string(raw_text)
+        if output_format == "txt":
+            # Xuất text thuần từ srt đã sửa
+            out_content = srt_processor.srt_to_txt(cleaned_srt)
+            out_name = f"cleaned_{Path(file.filename).stem}.txt"
+        else:
+            out_content = cleaned_srt
+            out_name = f"cleaned_{file.filename}"
+    else:  # .txt
+        lines = [l.strip() for l in raw_text.split("\n") if l.strip()]
+        cleaned_lines = corrector.predict_batch(lines) if corrector else lines
+        out_content = "\n".join(cleaned_lines) + "\n"
+        out_name = f"cleaned_{file.filename}"
+
+    return PlainTextResponse(
+        content=out_content,
+        media_type="text/plain",
+        headers={"Content-Disposition": f"attachment; filename={out_name}"},
     )
 
 

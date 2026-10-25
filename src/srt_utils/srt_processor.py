@@ -107,6 +107,76 @@ class SRTSubtitleProcessor:
         else:
             return self._compose_fallback(subtitles)
 
+    def srt_to_txt(self, srt_content: str) -> str:
+        """Trích xuất văn bản thuần túy từ tệp phụ đề .srt (loại bỏ timestamps và số thứ tự).
+        
+        Rất hữu ích để lấy dữ liệu làm sạch nạp vào tập dữ liệu huấn luyện cho mô hình.
+        """
+        if not srt_content.strip():
+            return ""
+
+        if srt is not None:
+            subtitles = list(srt.parse(srt_content))
+            lines = [sub.content.replace("\n", " ").strip() for sub in subtitles]
+        else:
+            subtitles = self._parse_fallback(srt_content)
+            lines = [sub.content for sub in subtitles]
+
+        return "\n".join(line for line in lines if line)
+
+    def process_file_flexible(
+        self,
+        input_path: Union[str, Path],
+        output_dir: Optional[Union[str, Path]] = None,
+        batch_size: int = 16,
+    ) -> dict:
+        """Xử lý linh hoạt cả tệp .srt và .txt:
+        - Nếu đầu vào là .srt: Sửa lỗi và xuất ra cả file .srt chuẩn (giữ timestamps) và file .txt sạch.
+        - Nếu đầu vào là .txt: Sửa lỗi và xuất ra file .txt sạch.
+        """
+        in_path = Path(input_path)
+        if not in_path.exists():
+            raise FileNotFoundError(f"Không tìm thấy file: {in_path}")
+
+        target_dir = Path(output_dir) if output_dir else in_path.parent
+        target_dir.mkdir(parents=True, exist_ok=True)
+        results = {}
+
+        with open(in_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+
+        if in_path.suffix.lower() == ".srt":
+            # 1. Xuất file .srt sạch (giữ timestamps)
+            cleaned_srt = self.process_srt_string(content, batch_size=batch_size)
+            out_srt = target_dir / f"{in_path.stem}_cleaned.srt"
+            with open(out_srt, "w", encoding="utf-8") as f:
+                f.write(cleaned_srt)
+            results["cleaned_srt"] = str(out_srt)
+
+            # 2. Xuất thêm file .txt thuần túy sạch (không timestamps)
+            cleaned_txt = self.srt_to_txt(cleaned_srt)
+            out_txt = target_dir / f"{in_path.stem}_cleaned.txt"
+            with open(out_txt, "w", encoding="utf-8") as f:
+                f.write(cleaned_txt)
+            results["cleaned_txt"] = str(out_txt)
+
+        elif in_path.suffix.lower() == ".txt":
+            # Đầu vào là file text thuần: sửa từng dòng
+            lines = [line.strip() for line in content.split("\n") if line.strip()]
+            if self.corrector_model is not None:
+                cleaned_lines = self.corrector_model.predict_batch(lines, batch_size=batch_size)
+            else:
+                cleaned_lines = lines
+
+            out_txt = target_dir / f"{in_path.stem}_cleaned.txt"
+            with open(out_txt, "w", encoding="utf-8") as f:
+                f.write("\n".join(cleaned_lines) + "\n")
+            results["cleaned_txt"] = str(out_txt)
+        else:
+            raise ValueError("Chỉ hỗ trợ tệp định dạng .srt hoặc .txt")
+
+        return results
+
     def process_srt_file(
         self,
         input_srt_path: Union[str, Path],
