@@ -1,0 +1,31 @@
+# Core Deep Learning & NLP
+torch>=2.0.0
+transformers>=4.38.0
+datasets>=2.18.0
+accelerate>=0.28.0
+sentencepiece>=0.1.99
+tokenizers>=0.15.0
+
+# Pre-trained Seq2Seq & Utilities
+pyvi>=0.1.1
+rapidfuzz>=3.6.0
+srt>=3.5.3
+
+# Evaluation Metrics
+evaluate>=0.4.1
+sacrebleu>=2.4.0
+rouge-score>=0.1.2
+jiwer>=3.0.3
+
+# Serving & Web API
+fastapi>=0.110.0
+uvicorn[standard]>=0.28.0
+pydantic>=2.6.0
+python-multipart>=0.0.9
+
+# Dev & Utilities
+python-dotenv>=1.0.1
+tqdm>=4.66.0
+pandas>=2.2.0
+numpy>=1.26.0
+pytest>=8.0.0

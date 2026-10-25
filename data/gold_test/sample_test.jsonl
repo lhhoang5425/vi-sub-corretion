@@ -1,0 +1,5 @@
+{"id": 1, "noisy": "toi di lam o ngan hang va danh tien tiet kiem", "clean": "Tôi đi làm ở ngân hàng và dành tiền tiết kiệm.", "error_type": ["tones", "punctuation", "capitalization", "homophone"]}
+{"id": 2, "noisy": "hom nay thoi tiet rat dep chung ta di choi nhe", "clean": "Hôm nay thời tiết rất đẹp, chúng ta đi chơi nhé!", "error_type": ["tones", "punctuation", "capitalization"]}
+{"id": 3, "noisy": "hoc phan xu ly ngon ngu tu nhien rat la bo ich", "clean": "Học phần Xử lý ngôn ngữ tự nhiên rất là bổ ích.", "error_type": ["tones", "punctuation", "capitalization"]}
+{"id": 4, "noisy": "bac si bao toi phai nghi ngoi va uong thuoc dung gio", "clean": "Bác sĩ bảo tôi phải nghỉ ngơi và uống thuốc đúng giờ.", "error_type": ["tones", "punctuation", "capitalization"]}
+{"id": 5, "noisy": "xin chao cac ban da quay tro lai voi kenh youtube cua minh", "clean": "Xin chào các bạn đã quay trở lại với kênh YouTube của mình.", "error_type": ["tones", "punctuation", "capitalization"]}
