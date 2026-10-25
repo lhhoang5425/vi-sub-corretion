@@ -89,14 +89,17 @@ def train():
     except TypeError:
         training_args = Seq2SeqTrainingArguments(**training_kwargs, evaluation_strategy=eval_val)
 
-    trainer = Seq2SeqTrainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_datasets["train"],
-        eval_dataset=tokenized_datasets.get("validation", None),
-        tokenizer=tokenizer,
-        data_collator=data_collator,
-    )
+    trainer_kwargs = {
+        "model": model,
+        "args": training_args,
+        "train_dataset": tokenized_datasets["train"],
+        "eval_dataset": tokenized_datasets.get("validation", None),
+        "data_collator": data_collator,
+    }
+    try:
+        trainer = Seq2SeqTrainer(**trainer_kwargs, processing_class=tokenizer)
+    except TypeError:
+        trainer = Seq2SeqTrainer(**trainer_kwargs, tokenizer=tokenizer)
 
     # 5. Huấn luyện và lưu model
     trainer.train()
