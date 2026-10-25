@@ -80,21 +80,22 @@ class Seq2SeqCorrector:
             return_tensors="pt",
             max_length=self.max_length,
             truncation=True,
-            padding="max_length",
         ).to(self.device)
 
         with torch.no_grad():
             outputs = self.model.generate(
                 inputs["input_ids"],
-                max_length=self.max_length,
+                max_new_tokens=self.max_length,
                 num_beams=4,
                 early_stopping=True,
+                no_repeat_ngram_size=3,
+                repetition_penalty=1.1,
             )
 
         clean_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
         return clean_text.strip()
 
-    def predict_batch(self, texts: List[str], batch_size: int = 8) -> List[str]:
+    def predict_batch(self, texts: List[str], batch_size: int = 8, **kwargs) -> List[str]:
         """Sửa lỗi cho danh sách câu theo batch (tối ưu tốc độ cho tệp phụ đề .srt)."""
         if not texts:
             return []
@@ -116,9 +117,11 @@ class Seq2SeqCorrector:
             with torch.no_grad():
                 outputs = self.model.generate(
                     inputs["input_ids"],
-                    max_length=self.max_length,
+                    max_new_tokens=self.max_length,
                     num_beams=4,
                     early_stopping=True,
+                    no_repeat_ngram_size=3,
+                    repetition_penalty=1.1,
                 )
 
             batch_results = [
