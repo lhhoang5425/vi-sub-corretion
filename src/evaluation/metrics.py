@@ -6,16 +6,54 @@ Tính toán các chỉ số bắt buộc theo yêu cầu đề cương NLP-28:
 3. Edit-level Precision, Recall, F1: Đánh giá độ chính xác của các chỉnh sửa (tránh sửa sai câu đúng).
 """
 
+import collections
+import math
 from typing import Dict, List
-import sacrebleu
+
+try:
+    import sacrebleu
+except ImportError:
+    sacrebleu = None
+
+
+def _simple_bleu(predictions: List[str], references: List[str], max_n: int = 4) -> float:
+    """Fallback tính BLEU thuần Python đơn giản khi chưa cài sacrebleu."""
+    total_score = 0.0
+    for pred, ref in zip(predictions, references):
+        pred_tokens = pred.strip().split()
+        ref_tokens = ref.strip().split()
+        if not pred_tokens or not ref_tokens:
+            continue
+
+        # N-gram precisions
+        p_n = []
+        for n in range(1, max_n + 1):
+            pred_ngrams = collections.Counter(
+                tuple(pred_tokens[i : i + n]) for i in range(len(pred_tokens) - n + 1)
+            )
+            ref_ngrams = collections.Counter(
+                tuple(ref_tokens[i : i + n]) for i in range(len(ref_tokens) - n + 1)
+            )
+            overlap = sum((pred_ngrams & ref_ngrams).values())
+            total = max(len(pred_tokens) - n + 1, 1)
+            p_n.append(max(overlap / total, 1e-9))
+
+        # Brevity penalty
+        bp = 1.0 if len(pred_tokens) > len(ref_tokens) else math.exp(1 - len(ref_tokens) / max(len(pred_tokens), 1))
+        geom_mean = math.exp(sum(math.log(p) for p in p_n) / max_n)
+        total_score += bp * geom_mean * 100
+
+    return round(total_score / max(len(predictions), 1), 2)
 
 
 def calculate_bleu(predictions: List[str], references: List[str]) -> float:
-    """Tính điểm SacreBLEU trên danh sách câu dự đoán và câu tham chiếu."""
+    """Tính điểm SacreBLEU (hoặc fallback thuần Python nếu chưa cài sacrebleu)."""
     if not predictions or not references:
         return 0.0
-    bleu = sacrebleu.corpus_bleu(predictions, [[r] for r in references])
-    return round(bleu.score, 2)
+    if sacrebleu is not None:
+        bleu = sacrebleu.corpus_bleu(predictions, [[r] for r in references])
+        return round(bleu.score, 2)
+    return _simple_bleu(predictions, references)
 
 
 def calculate_wer(predictions: List[str], references: List[str]) -> float:

@@ -6,8 +6,14 @@ Tự động fallback về baseline nếu chưa tải được checkpoint nặng
 
 import os
 from typing import List, Optional
-import torch
-from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+
+try:
+    import torch
+    from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
+except ImportError:
+    torch = None
+    AutoModelForSeq2SeqLM = None
+    AutoTokenizer = None
 
 from ..baseline.rule_baseline import RuleAndDictionaryBaseline
 
@@ -28,7 +34,7 @@ class Seq2SeqCorrector:
         self.fallback_model = RuleAndDictionaryBaseline()
 
         if device is None:
-            self.device = "cuda" if torch.cuda.is_available() else "cpu"
+            self.device = "cuda" if (torch is not None and torch.cuda.is_available()) else "cpu"
         else:
             self.device = device
 
@@ -37,6 +43,13 @@ class Seq2SeqCorrector:
         self._load_model()
 
     def _load_model(self):
+        if torch is None or AutoModelForSeq2SeqLM is None:
+            if self.use_fallback:
+                print("[Seq2SeqCorrector] Chưa cài đặt 'torch' hoặc 'transformers'. Tự động chạy chế độ Baseline.")
+                return
+            else:
+                raise ImportError("Vui lòng cài đặt thư viện: pip install torch transformers")
+
         try:
             print(f"[Seq2SeqCorrector] Đang tải mô hình: {self.model_name_or_path} trên {self.device}...")
             self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path)
