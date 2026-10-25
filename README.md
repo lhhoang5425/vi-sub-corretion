@@ -1,5 +1,12 @@
 # Vietnamese ASR Post-Correction & Subtitle Normalizer
 
+[![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
+[![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
+[![HuggingFace](https://img.shields.io/badge/Model-ViT5%20%7C%20BARTpho-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/lhhoang5425/vi-sub-corretion/pulls)
+
 Hệ thống phát hiện, sửa lỗi ngữ pháp, chính tả và khôi phục dấu câu cho phụ đề tiếng Việt từ nhận dạng giọng nói (ASR) sử dụng mô hình Sequence-to-Sequence (ViT5 / BARTpho).
 
 ## Tổng quan
@@ -10,6 +17,35 @@ Hệ thống phát hiện, sửa lỗi ngữ pháp, chính tả và khôi phục
 - Ngữ nghĩa bị đứt đoạn do câu nói tự nhiên.
 
 Dự án này triển khai kiến trúc Sequence-to-Sequence (Seq2Seq) như một mô hình khử nhiễu (Denoising Model) để chuẩn hóa văn bản phụ đề mà vẫn bảo toàn chính xác mốc thời gian (timestamps) của tệp `.srt`.
+
+## Kiến trúc hệ thống (Pipeline)
+
+```text
+[Video / Audio File]
+         │
+         ▼ (Whisper / ASR Engine)
+[Raw SRT Subtitle] (lỗi dấu câu, sai ngữ pháp, từ đồng âm)
+         │
+         ▼
+┌────────────────────────────────────────────────────────┐
+│  1. SRT Parser: Bóc tách text & lưu vết Timestamps      │
+└────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────────────────────────┐
+│  2. Pipeline Khử Nhiễu (Seq2Seq Denoising Model)       │
+│     - Baseline: Rule-based & SymSpell Dictionary       │
+│     - Core Model: Fine-tuned ViT5-base / BARTpho       │
+└────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────────────────────────┐
+│  3. SRT Re-composer: Ghép text sạch vào Timestamps gốc │
+└────────────────────────────────────────────────────────┘
+         │
+         ▼
+[Clean & Polished SRT Subtitle] (Phụ đề mượt mà, đúng chuẩn)
+```
 
 ## Cài đặt
 
@@ -97,7 +133,7 @@ Hệ thống được đánh giá trên tập dữ liệu kiểm thử độc l�
 - **SacreBLEU:** Đo lường độ tương đồng ngữ nghĩa so với câu tham chiếu chuẩn.
 - **Edit-level Precision / Recall / F1:** Đo lường độ chính xác tại các vị trí chỉnh sửa (hạn chế hiện tượng over-correction).
 
-Chạy kiểm thử đánh giá:
+Chạy kiểm thử:
 ```bash
 python -m pytest tests/
 ```
