@@ -9,6 +9,10 @@ Tính toán các chỉ số:
 - SacreBLEU / BLEU (Độ tương đồng câu với Ground Truth)
 - WER (%) (Word Error Rate - Tỷ lệ lỗi ở mức từ)
 - Edit-level Precision, Recall, F1 (Đo lường độ chính xác tại các vị trí sửa lỗi)
+
+Hỗ trợ xuất báo cáo:
+- Tệp Markdown (.md)
+- Tệp Excel (.xlsx) với 2 Sheet: Sheet Tổng Hợp Chỉ Số và Sheet Chi Tiết Từng Câu
 """
 
 import argparse
@@ -39,6 +43,12 @@ def parse_args():
         type=str,
         default="reports/benchmark_summary.md",
         help="Tệp lưu báo cáo kết quả Markdown",
+    )
+    parser.add_argument(
+        "--output_excel",
+        type=str,
+        default="reports/benchmark_results.xlsx",
+        help="Tệp lưu báo cáo kết quả Excel (.xlsx)",
     )
     parser.add_argument(
         "--batch_size",
@@ -85,6 +95,64 @@ def format_markdown_table(results: Dict[str, Dict[str, float]], num_samples: int
     return "\n".join(md)
 
 
+def export_to_excel(
+    results: Dict[str, Dict[str, float]],
+    sources: List[str],
+    references: List[str],
+    predictions: Dict[str, List[str]],
+    output_excel_path: str,
+):
+    """Xuất báo cáo benchmark ra tệp Excel (.xlsx) gồm 2 Sheet trực quan:
+    1. 'TongHop_ChiSo': Bảng tổng hợp các chỉ số BLEU, WER, Edit-F1.
+    2. 'ChiTiet_TungCau': Bảng chi tiết từng câu đầu vào, câu chuẩn và câu sửa lỗi của từng mô hình.
+    """
+    try:
+        import pandas as pd
+    except ImportError:
+        print("[Cảnh báo] Chưa cài đặt pandas, không thể xuất file Excel.")
+        return
+
+    out_path = Path(output_excel_path)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+
+    # 1. Sheet Tổng hợp
+    summary_rows = []
+    for model_name, metrics in results.items():
+        summary_rows.append({
+            "Phương pháp đối chứng": model_name,
+            "BLEU (Độ tương đồng) ↑": metrics["bleu"],
+            "WER (Tỷ lệ lỗi từ %) ↓": metrics["wer"],
+            "Edit Precision (%) ↑": metrics["edit_precision"],
+            "Edit Recall (%) ↑": metrics["edit_recall"],
+            "Edit F1 (%) ↑": metrics["edit_f1"],
+        })
+    df_summary = pd.DataFrame(summary_rows)
+
+    # 2. Sheet Chi tiết từng câu
+    detail_rows = []
+    for idx, (src, ref) in enumerate(zip(sources, references)):
+        row = {
+            "STT": idx + 1,
+            "Câu gốc ASR (Noisy)": src,
+            "Đáp án chuẩn (Ground Truth)": ref,
+        }
+        for model_name, preds in predictions.items():
+            row[f"Kết quả {model_name}"] = preds[idx] if idx < len(preds) else ""
+        detail_rows.append(row)
+    df_detail = pd.DataFrame(detail_rows)
+
+    # Ghi ra file Excel định dạng chuẩn
+    try:
+        with pd.ExcelWriter(out_path, engine="openpyxl") as writer:
+            df_summary.to_excel(writer, sheet_name="TongHop_ChiSo", index=False)
+            df_detail.to_excel(writer, sheet_name="ChiTiet_TungCau", index=False)
+        print(f"[Thông báo] Đã xuất báo cáo Excel thành công tại: {out_path}")
+    except Exception as e:
+        csv_path = out_path.with_suffix(".csv")
+        df_summary.to_csv(csv_path, index=False, encoding="utf-8-sig")
+        print(f"[Thông báo] Đã lưu dự phòng dạng CSV tại: {csv_path} (Lỗi openpyxl: {e})")
+
+
 def run_benchmark():
     args = parse_args()
     print("=" * 65)
@@ -97,6 +165,7 @@ def run_benchmark():
     print(f"- Số lượng mẫu test: {len(sources)} câu\n")
 
     all_results = {}
+    all_predictions = {}
 
     # 1. Baseline 1: Identity
     print("[1/3] Đang đánh giá Baseline 1: Identity (giữ nguyên)...")
@@ -104,6 +173,7 @@ def run_benchmark():
     preds_b1 = baseline1.predict_batch(sources)
     res_b1 = evaluate_predictions(sources, preds_b1, references)
     all_results["Baseline 1 (Identity)"] = res_b1
+    all_predictions["Baseline 1 (Identity)"] = preds_b1
     print(f"      -> BLEU: {res_b1['bleu']} | WER: {res_b1['wer']}% | Edit-F1: {res_b1['edit_f1']}%")
 
     # 2. Baseline 2: Rule & Dictionary
@@ -112,15 +182,18 @@ def run_benchmark():
     preds_b2 = baseline2.predict_batch(sources)
     res_b2 = evaluate_predictions(sources, preds_b2, references)
     all_results["Baseline 2 (Rule & Dictionary)"] = res_b2
+    all_predictions["Baseline 2 (Rule & Dictionary)"] = preds_b2
     print(f"      -> BLEU: {res_b2['bleu']} | WER: {res_b2['wer']}% | Edit-F1: {res_b2['edit_f1']}%")
 
     # 3. Mô hình Seq2Seq
+    seq2seq_name = f"Seq2Seq ({Path(args.model_name_or_path).name})"
     print(f"[3/3] Đang đánh giá Seq2Seq ({args.model_name_or_path})...")
     from ..models.inference import Seq2SeqCorrector
     seq2seq = Seq2SeqCorrector(model_name_or_path=args.model_name_or_path)
     preds_seq2seq = seq2seq.predict_batch(sources, batch_size=args.batch_size)
     res_seq2seq = evaluate_predictions(sources, preds_seq2seq, references)
-    all_results[f"Seq2Seq ({Path(args.model_name_or_path).name})"] = res_seq2seq
+    all_results[seq2seq_name] = res_seq2seq
+    all_predictions[seq2seq_name] = preds_seq2seq
     print(f"      -> BLEU: {res_seq2seq['bleu']} | WER: {res_seq2seq['wer']}% | Edit-F1: {res_seq2seq['edit_f1']}%")
 
     # Xuất bảng Markdown
@@ -129,13 +202,23 @@ def run_benchmark():
     print(table_md)
     print("=" * 65)
 
-    # Lưu báo cáo
+    # 1. Lưu báo cáo Markdown
     if args.output_report:
         out_path = Path(args.output_report)
         out_path.parent.mkdir(parents=True, exist_ok=True)
         with open(out_path, "w", encoding="utf-8") as f:
             f.write(table_md + "\n")
         print(f"\n[Thông báo] Đã lưu bảng kết quả Markdown tại: {out_path}")
+
+    # 2. Xuất báo cáo Excel (nhiều sheet)
+    if args.output_excel:
+        export_to_excel(
+            results=all_results,
+            sources=sources,
+            references=references,
+            predictions=all_predictions,
+            output_excel_path=args.output_excel,
+        )
 
     return all_results
 
