@@ -5,6 +5,7 @@ Tự động fallback về baseline nếu chưa tải được checkpoint nặng
 """
 
 import os
+import re
 from typing import List, Optional
 
 try:
@@ -16,6 +17,41 @@ except ImportError:
     AutoTokenizer = None
 
 from ..baseline.rule_baseline import RuleAndDictionaryBaseline
+
+
+def clean_hallucinated_tail(text: str, input_text: str = "") -> str:
+    """Lọc bỏ ảo giác giải mã (Decoding Hallucination / Token Leakage).
+
+    1. Loại bỏ các ký tự ngoài bảng mã tiếng Việt/Latin (tiếng Thái, Trung, Ả Rập, Cyrillic...).
+    2. Ràng buộc độ dài: Nếu câu sinh ra dài vượt mức bất thường so với câu gốc (> 1.8 lần),
+       cắt bỏ phần đuôi bị sinh lố sau dấu kết thúc câu (. ! ?).
+    3. Dọn sạch dấu câu lơ lửng ở cuối (dấu phẩy, hai chấm, gạch nối...).
+    """
+    if not text:
+        return ""
+
+    # 1. Loại bỏ ký tự tiếng Thái (\u0e00-\u0e7f), CJK (\u4e00-\u9fff), Cyrillic (\u0400-\u04ff), Arabic (\u0600-\u06ff)
+    cleaned = re.sub(r"[\u0e00-\u0e7f\u4e00-\u9fff\u0400-\u04ff\u0600-\u06ff\u3040-\u30ff]", "", text)
+
+    # 2. Chuẩn hoá khoảng trắng
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    # 3. Kiểm soát độ dài so với câu gốc
+    if input_text:
+        in_words = input_text.strip().split()
+        out_words = cleaned.split()
+        if len(in_words) > 0 and len(out_words) > int(len(in_words) * 1.8) + 5:
+            cutoff_len = int(len(in_words) * 1.4) + 3
+            truncated = " ".join(out_words[:cutoff_len])
+            m = re.search(r"[\.\?!][^\.\?!]*$", truncated)
+            if m:
+                cleaned = truncated[: m.end()].strip()
+            else:
+                cleaned = truncated.strip()
+
+    # 4. Xóa dấu câu lơ lửng ở cuối
+    cleaned = re.sub(r"[\s,;:\-]+$", "", cleaned).strip()
+    return cleaned
 
 
 class Seq2SeqCorrector:
@@ -77,7 +113,7 @@ class Seq2SeqCorrector:
         if self.model is None or self.tokenizer is None:
             return self.fallback_model.predict(text)
 
-        # Chạy suy luận qua Seq2Seq model
+        # Chạy suy luận qua Seq2Seq model với ràng buộc độ dài động (chống ảo giác đuôi)
         inputs = self.tokenizer(
             text,
             return_tensors="pt",
@@ -85,18 +121,22 @@ class Seq2SeqCorrector:
             truncation=True,
         ).to(self.device)
 
+        input_num_tokens = inputs["input_ids"].shape[1]
+        dynamic_max_tokens = min(max(int(input_num_tokens * 1.3) + 12, 20), self.max_length)
+
         with torch.no_grad():
             outputs = self.model.generate(
-                inputs["input_ids"],
-                max_new_tokens=self.max_length,
-                num_beams=4,
+                **inputs,
+                max_new_tokens=dynamic_max_tokens,
+                num_beams=5,
                 early_stopping=True,
                 no_repeat_ngram_size=3,
-                repetition_penalty=1.1,
+                repetition_penalty=1.2,
+                length_penalty=1.0,
             )
 
         clean_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
-        return clean_text.strip()
+        return clean_hallucinated_tail(clean_text, input_text=text)
 
     def predict_batch(self, texts: List[str], batch_size: int = 8, **kwargs) -> List[str]:
         """Sửa lỗi cho danh sách câu theo batch (tối ưu tốc độ cho tệp phụ đề .srt)."""
@@ -117,19 +157,23 @@ class Seq2SeqCorrector:
                 padding=True,
             ).to(self.device)
 
+            max_input_len = inputs["input_ids"].shape[1]
+            dynamic_max_tokens = min(max(int(max_input_len * 1.3) + 12, 20), self.max_length)
+
             with torch.no_grad():
                 outputs = self.model.generate(
-                    inputs["input_ids"],
-                    max_new_tokens=self.max_length,
-                    num_beams=4,
+                    **inputs,
+                    max_new_tokens=dynamic_max_tokens,
+                    num_beams=5,
                     early_stopping=True,
                     no_repeat_ngram_size=3,
-                    repetition_penalty=1.1,
+                    repetition_penalty=1.2,
+                    length_penalty=1.0,
                 )
 
             batch_results = [
-                self.tokenizer.decode(out, skip_special_tokens=True).strip()
-                for out in outputs
+                clean_hallucinated_tail(self.tokenizer.decode(out, skip_special_tokens=True), input_text=src)
+                for out, src in zip(outputs, batch_texts)
             ]
             results.extend(batch_results)
 
