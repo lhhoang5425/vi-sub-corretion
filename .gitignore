@@ -72,5 +72,12 @@ BAO_CAO_NLP28.html
 # HTML trung gian sinh ra khi export PDF
 *.html
 
+# Tài liệu và công cụ CHỈ DÙNG Ở MÁY CÁ NHÂN — không đưa lên git.
+# PDF sinh lại được từ DE_CUONG_NLP28.md bằng export_de_cuong_pdf.py.
+# File .code-workspace chứa đường dẫn tuyệt đối của máy nên vô nghĩa với người khác.
+DE_CUONG_NLP28.pdf
+export_de_cuong_pdf.py
+*.code-workspace
+
 # Công cụ hỗ trợ lập trình (không thuộc dự án)
 .commandcode/
