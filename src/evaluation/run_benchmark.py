@@ -93,18 +93,18 @@ def parse_args():
     return parser.parse_args()
 
 
-def load_test_data(file_path: str) -> Tuple[List[str], List[str], List[List[str]]]:
-    """Đọc tập kiểm thử, trả về (noisy, clean, nhãn lỗi theo từng câu).
+def load_test_data(file_path: str) -> Tuple[List[str], List[str], List[List[str]], List[List[str]]]:
+    """Đọc tập kiểm thử, trả về (noisy, clean, nhãn lỗi, nguồn theo từng câu).
 
-    Trường error_type trong gold test vốn đã được gán nhãn thủ công; dùng nó để tách
-    bảng hiệu năng theo từng loại lỗi (mất dấu, mất dấu câu, từ đồng âm...) thay vì
-    chỉ ra một con số trung bình chung.
+    `error_type` dùng để tách bảng theo loại lỗi (mất dấu, mất dấu câu, đồng âm...).
+    `source` dùng để tách bảng theo nguồn dữ liệu — chỉ có ý nghĩa khi tập test ghép
+    nhiều nguồn (vd ShynBui + Wikipedia), giúp phát hiện mô hình chỉ giỏi một nguồn.
     """
     path = Path(file_path)
     if not path.exists():
         raise FileNotFoundError(f"Không tìm thấy file kiểm thử: {path}")
 
-    sources, references, error_types = [], [], []
+    sources, references, error_types, data_sources = [], [], [], []
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -114,8 +114,9 @@ def load_test_data(file_path: str) -> Tuple[List[str], List[str], List[List[str]
             sources.append(data["noisy"])
             references.append(data["clean"])
             error_types.append(data.get("error_type") or ["khong_quy_nhan"])
+            data_sources.append([data.get("source") or "khong_ro"])
 
-    return sources, references, error_types
+    return sources, references, error_types, data_sources
 
 
 def format_markdown_table(results: Dict[str, Dict[str, float]], num_samples: int) -> str:
@@ -147,16 +148,19 @@ def format_markdown_table(results: Dict[str, Dict[str, float]], num_samples: int
     return "\n".join(md)
 
 
-def format_error_type_table(
+def format_grouped_table(
     predictions: Dict[str, List[str]],
     sources: List[str],
     references: List[str],
-    error_types: List[List[str]],
+    groups: List[List[str]],
+    title: str,
+    row_label: str,
+    note: str = "",
 ) -> str:
-    """Bảng hiệu năng TÁCH THEO loại lỗi, chỉ dành cho mô hình Seq2Seq.
+    """Bảng hiệu năng tách theo một tiêu chí nhóm (loại lỗi, nguồn dữ liệu...).
 
-    Trả lời câu hỏi 'mô hình mạnh ở đâu và yếu ở đâu' mà bảng trung bình che mất:
-    ví dụ phục hồi dấu thanh tốt nhưng khôi phục dấu câu kém.
+    Trả lời câu hỏi 'mô hình mạnh ở đâu và yếu ở đâu' mà bảng trung bình che mất.
+    Một câu có thể thuộc nhiều nhóm nên được đếm ở nhiều dòng.
     """
     seq2seq_names = [n for n in predictions if n.startswith("Seq2Seq")]
     if not seq2seq_names:
@@ -165,28 +169,64 @@ def format_error_type_table(
     preds = predictions[model_name]
 
     buckets: Dict[str, List[int]] = {}
-    for idx, types in enumerate(error_types):
-        for t in types:
+    for idx, tags in enumerate(groups):
+        for t in tags:
             buckets.setdefault(t, []).append(idx)
 
     rows = []
     for bucket, indices in sorted(buckets.items(), key=lambda kv: -len(kv[1])):
-        sub_src = [sources[i] for i in indices]
-        sub_pred = [preds[i] for i in indices]
-        sub_ref = [references[i] for i in indices]
-        m = evaluate_predictions(sub_src, sub_pred, sub_ref)
+        m = evaluate_predictions(
+            [sources[i] for i in indices],
+            [preds[i] for i in indices],
+            [references[i] for i in indices],
+        )
         rows.append((bucket, len(indices), m["exact_match"], m["cer"], m["bleu"], m["edit_f1"]))
 
     md = [
-        f"\n### Bảng hiệu năng theo loại lỗi ({model_name})\n",
-        "| Loại lỗi | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |",
+        f"\n### {title} ({model_name})\n",
+        f"| {row_label} | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |",
         "| :--- | :---: | :---: | :---: | :---: | :---: |",
     ]
     for bucket, n, em, cer, bleu, f1 in rows:
         md.append(f"| {bucket} | {n} | {em:.2f} | {cer:.2f} | {bleu:.2f} | {f1:.2f} |")
-    md.append("\n*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*")
-    md.append("*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*")
+    if note:
+        md.append(note)
     return "\n".join(md)
+
+
+def format_error_type_table(
+    predictions: Dict[str, List[str]],
+    sources: List[str],
+    references: List[str],
+    error_types: List[List[str]],
+) -> str:
+    """Bảng tách theo LOẠI LỖI: phục hồi dấu thanh tốt nhưng dấu câu kém thì thấy ngay."""
+    return format_grouped_table(
+        predictions, sources, references, error_types,
+        "Bảng hiệu năng theo loại lỗi", "Loại lỗi",
+        "\n*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*\n"
+        "*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*",
+    )
+
+
+def format_source_table(
+    predictions: Dict[str, List[str]],
+    sources: List[str],
+    references: List[str],
+    data_sources: List[List[str]],
+) -> str:
+    """Bảng tách theo NGUỒN dữ liệu — phát hiện mô hình chỉ giỏi văn phong một nguồn.
+
+    Chỉ in khi tập test thật sự có từ hai nguồn trở lên, nếu không thì bảng vô nghĩa.
+    """
+    if len({s for grp in data_sources for s in grp}) < 2:
+        return ""
+    return format_grouped_table(
+        predictions, sources, references, data_sources,
+        "Bảng hiệu năng theo nguồn dữ liệu", "Nguồn",
+        "\n*Chênh lệch lớn giữa các nguồn nghĩa là mô hình chưa tổng quát hoá,*\n"
+        "*mà chỉ khớp văn phong của nguồn chiếm đa số trong tập train.*",
+    )
 
 
 def format_case_review(
@@ -242,6 +282,7 @@ def build_log(
     predictions: Dict[str, List[str]],
     error_types: List[List[str]],
     engine: str,
+    data_sources: List[List[str]] = None,
 ) -> str:
     """Gom toàn bộ đánh giá thành một tệp .txt đọc được ngay, không cần mở Excel."""
     bar = "=" * 78
@@ -266,6 +307,11 @@ def build_log(
     et_table = format_error_type_table(predictions, sources, references, error_types)
     if et_table:
         parts += ["", bar, "2. HIỆU NĂNG TÁCH THEO LOẠI LỖI", bar, et_table]
+
+    if data_sources:
+        src_table = format_source_table(predictions, sources, references, data_sources)
+        if src_table:
+            parts += ["", bar, "2b. HIỆU NĂNG TÁCH THEO NGUỒN DỮ LIỆU", bar, src_table]
 
     parts += ["", bar, "3. CHI TIẾT SỐ CÂU THUỘC TỪNG NHÓM SỬA LỖI", bar]
     for name, m in results.items():
@@ -346,7 +392,7 @@ def run_benchmark():
     print(f"- Tập dữ liệu test : {args.test_file}")
     print(f"- Mô hình Seq2Seq  : {args.model_name_or_path}")
 
-    sources, references, error_types = load_test_data(args.test_file)
+    sources, references, error_types, data_sources = load_test_data(args.test_file)
     print(f"- Số lượng mẫu test: {len(sources)} câu\n")
 
     all_results: Dict[str, Dict[str, float]] = {}
@@ -397,25 +443,34 @@ def run_benchmark():
     # Bảng Markdown
     table_md = format_markdown_table(all_results, len(sources))
     et_md = format_error_type_table(all_predictions, sources, references, error_types)
+    src_md = format_source_table(all_predictions, sources, references, data_sources)
     print("\n" + "=" * 65)
     print(table_md)
     if et_md:
         print(et_md)
+    if src_md:
+        print(src_md)
     print("=" * 65)
 
     # 1. Báo cáo Markdown
     if args.output_report:
         out_path = Path(args.output_report)
         out_path.parent.mkdir(parents=True, exist_ok=True)
+        body = table_md + "\n"
+        if et_md:
+            body += "\n" + et_md + "\n"
+        if src_md:
+            body += "\n" + src_md + "\n"
         with open(out_path, "w", encoding="utf-8") as f:
-            f.write(table_md + "\n" + ("\n" + et_md + "\n" if et_md else ""))
+            f.write(body)
         print(f"\n[Thông báo] Đã lưu bảng kết quả Markdown tại: {out_path}")
 
     # 2. Log text đầy đủ
     if args.output_log:
         log_path = Path(args.output_log)
         log_path.parent.mkdir(parents=True, exist_ok=True)
-        log_text = build_log(args, all_results, sources, references, all_predictions, error_types, engine)
+        log_text = build_log(args, all_results, sources, references, all_predictions,
+                             error_types, engine, data_sources)
         log_path.write_text(log_text, encoding="utf-8")
         print(f"[Thông báo] Đã lưu LOG ĐẦY ĐỦ tại: {log_path} ({len(log_text):,} ký tự)")
 

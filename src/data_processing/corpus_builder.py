@@ -194,12 +194,52 @@ def load_text_sentences(path, min_words: int = 4, max_words: int = 60) -> List[s
     return out
 
 
+def load_wikipedia_sentences(
+    n_sentences: int,
+    min_words: int = 8,
+    max_words: int = 60,
+    lang: str = "vi",
+    seed: int = 42,
+) -> List[str]:
+    """Lấy câu sạch từ Wikipedia tiếng Việt (giấy phép CC BY-SA, commit lên git được).
+
+    Dùng làm NGUỒN THỨ HAI cho tập test, để không phụ thuộc độc quyền vào ShynBui.
+    Nếu mô hình chỉ giỏi văn phong của một nguồn, bảng theo `source` sẽ lộ ra.
+
+    Đọc ở chế độ streaming nên không tải cả kho về đĩa — dừng ngay khi đủ câu.
+    """
+    import re
+
+    from datasets import load_dataset
+
+    ds = load_dataset("wikimedia/wikipedia", f"20231101.{lang}",
+                      split="train", streaming=True)
+    seen = set()
+    out: List[str] = []
+    for article in ds:
+        for s in re.split(r"(?<=[.!?…])\s+", article.get("text") or ""):
+            s = " ".join(s.split())
+            if len(s) < 20 or s.count("(") or s.count("="):
+                continue
+            if not (min_words <= len(s.split()) <= max_words):
+                continue
+            key = s.lower()
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(s)
+            if len(out) >= n_sentences:
+                return out
+    return out
+
+
 def make_pairs(
     sentences: Sequence[str],
     profile: str = "legacy",
     tag: str = "test",
     seed: int = 42,
     noise_gen: Optional[ASRNoiseGenerator] = None,
+    source: str = "unknown",
 ) -> List[Dict]:
     """Sinh cặp `(noisy, clean)` cho một danh sách câu, KHÔNG chia train/val.
 
@@ -208,23 +248,26 @@ def make_pairs(
     hàm này với một giá trị đặc biệt nào đó.
 
     `seed` cố định để chạy lại cho ra đúng cùng tập nhiễu, phục vụ tái lập.
+    `source` ghi lại nguồn câu để benchmark tách được hiệu năng theo từng nguồn.
     """
     gen = noise_gen or ASRNoiseGenerator(profile=profile, seed=seed)
     rows = []
     for i, s in enumerate(sentences):
         noisy, errs = gen.apply_noise(s)
-        rows.append({"id": i + 1, "noisy": noisy, "clean": s, "errors": errs, "split": tag})
+        rows.append({"id": i + 1, "noisy": noisy, "clean": s,
+                     "errors": errs, "split": tag, "source": source})
     return rows
 
 
-def build_identity_test(sentences: Sequence[str]) -> List[Dict]:
+def build_identity_test(sentences: Sequence[str], source: str = "unknown") -> List[Dict]:
     """Tập đối chứng: đầu vào = đầu ra = câu đã đúng.
 
     Đây là phép đo duy nhất bắt được over-correction thuần. Nếu mô hình sửa bất cứ gì
     trên tập này thì phần sửa đó chắc chắn sai.
     """
     return [
-        {"id": i + 1, "noisy": s, "clean": s, "errors": ["clean"], "split": "identity"}
+        {"id": i + 1, "noisy": s, "clean": s, "errors": ["clean"],
+         "split": "identity", "source": source}
         for i, s in enumerate(sentences)
     ]
 
