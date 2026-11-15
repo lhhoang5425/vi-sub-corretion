@@ -39,6 +39,16 @@ data/raw/*
 data/synthetic/*
 !data/synthetic/.gitkeep
 
+# Văn bản nguồn ngoài — có bản quyền, KHÔNG đưa lên Git.
+# Gồm corpus/*.txt (văn học dịch) và tệp test sinh ra từ đó.
+# Cất trên Google Drive (vi-sub-correction/corpus/), Colab đồng bộ về khi cần.
+# Vẫn commit: script tái lập src/data_processing/build_corpus_test.py, và
+# data/gold_test/control/corpus_test_manifest.json (chỉ chứa hash + thống kê, không có văn bản).
+corpus/
+corpus.rar
+*.rar
+data/gold_test/control/corpus_*.jsonl
+
 # Environment variables
 .env
 .env.local
@@ -52,3 +62,15 @@ data/synthetic/*
 # OS
 .DS_Store
 Thumbs.db
+
+# Tài liệu nội bộ - KHÔNG đưa lên git
+# (bản phân tích chi tiết, chỉ dùng để nhóm đọc; bản nộp là DE_CUONG_NLP28)
+BAO_CAO_NLP28.md
+BAO_CAO_NLP28.pdf
+BAO_CAO_NLP28.html
+
+# HTML trung gian sinh ra khi export PDF
+*.html
+
+# Công cụ hỗ trợ lập trình (không thuộc dự án)
+.commandcode/

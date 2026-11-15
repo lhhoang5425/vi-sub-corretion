@@ -21,3 +21,4 @@ def test_clean_hallucinated_tail_normal_sentence():
     normal = "Hôm nay thời tiết rất đẹp, chúng ta cùng đi dạo phố nhé."
     cleaned = clean_hallucinated_tail(normal, input_text="hom nay thoi tiet rat dep chung ta cung di dao pho nhe")
     assert cleaned == normal
+

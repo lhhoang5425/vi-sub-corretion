@@ -1,0 +1,17 @@
+{
+  "tao_luc": "2026-11-15T14:12:56+07:00",
+  "so_cau": 962,
+  "so_tep_nguon": 4,
+  "tep_nguon": [
+    "1. Viết là hành lạc - Trương Thái Du.txt",
+    "16 mét vuông - Vũ Đình Giang.txt",
+    "24 giờ trong đời một người đàn bà - Stefan Zweig.txt",
+    "5. Đọc Linh Sơn của CAO HÀNH KIỆN - Trương Thái Du.txt"
+  ],
+  "hash_clean_sha256": "a7df5aa974b504a9942314d6e86583904f6de30c9f0688a3ff07ac086cd7fb4f",
+  "ho_so_nhieu": "asr_hard",
+  "seed_nhieu": 42,
+  "min_words": 8,
+  "max_words": 60,
+  "ghi_chu": "Tập test sinh từ văn bản có bản quyền nên KHÔNG commit corpus/ và corpus_*.jsonl. Manifest này để chứng minh tái lập: chạy lại build_corpus_test trên cùng corpus/ phải cho ra đúng hash_clean_sha256 và số câu này."
+}

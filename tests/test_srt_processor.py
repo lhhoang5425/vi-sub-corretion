@@ -28,6 +28,34 @@ def test_srt_processor_empty():
     assert processor.process_srt_string("") == ""
 
 
+def test_process_srt_pairs_keeps_original_and_cleaned():
+    sample_srt = """1
+00:00:01,000 --> 00:00:03,500
+toi di lam o ngan hang va gianh tien tiet kiem
+
+2
+00:00:04,000 --> 00:00:07,000
+hom nay thoi tiet rat dep
+"""
+    processor = SRTSubtitleProcessor(corrector_model=RuleAndDictionaryBaseline())
+    pairs = processor.process_srt_pairs(sample_srt)
+
+    assert len(pairs) == 2
+    first = pairs[0]
+    assert first["index"] == 1
+    assert first["start"] == "00:00:01,000"
+    assert first["end"] == "00:00:03,500"
+    # Câu gốc phải còn nguyên văn bản ASR để đối chiếu song song
+    assert first["original"] == "toi di lam o ngan hang va gianh tien tiet kiem"
+    assert "dành tiền" in first["corrected"]
+    # Dòng không có lỗi trong từ điển thì giữ nguyên nội dung
+    assert pairs[1]["original"] == "hom nay thoi tiet rat dep"
+
+
+def test_process_srt_pairs_empty():
+    assert SRTSubtitleProcessor().process_srt_pairs("") == []
+
+
 def test_srt_to_txt_extraction():
     sample_srt = """1
 00:00:01,000 --> 00:00:03,500

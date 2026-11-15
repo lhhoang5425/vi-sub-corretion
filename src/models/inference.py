@@ -63,11 +63,24 @@ class Seq2SeqCorrector:
         device: Optional[str] = None,
         max_length: int = 128,
         use_fallback: bool = True,
+        num_beams: int = 5,
+        repetition_penalty: float = 1.2,
+        length_penalty: float = 1.0,
+        no_repeat_ngram_size: int = 3,
     ):
         self.model_name_or_path = model_name_or_path
         self.max_length = max_length
         self.use_fallback = use_fallback
         self.fallback_model = RuleAndDictionaryBaseline()
+
+        # Tham số giải mã, tách ra khỏi mã cứng để grid-search được ngay trên GPU
+        # mà không phải nạp lại mô hình 1.58 GB mỗi lần đổi cấu hình.
+        self.generate_kwargs = {
+            "num_beams": num_beams,
+            "repetition_penalty": repetition_penalty,
+            "length_penalty": length_penalty,
+            "no_repeat_ngram_size": no_repeat_ngram_size,
+        }
 
         if device is None:
             self.device = "cuda" if (torch is not None and torch.cuda.is_available()) else "cpu"
@@ -105,6 +118,21 @@ class Seq2SeqCorrector:
             else:
                 raise e
 
+    def set_decoding(self, **kwargs) -> "Seq2SeqCorrector":
+        """Đổi tham số giải mã tại chỗ, không phải nạp lại mô hình.
+
+        Dùng cho grid-search: nạp bmd1905 mất ~1.58 GB, đổi beams/penalty chỉ mất
+        vài giây generate trên tập validation. Gọi chuỗi được.
+        """
+        unknown = set(kwargs) - set(self.generate_kwargs)
+        if unknown:
+            raise TypeError(
+                f"Tham số giải mã không hợp lệ: {sorted(unknown)}. "
+                f"Hợp lệ: {sorted(self.generate_kwargs)}"
+            )
+        self.generate_kwargs.update(kwargs)
+        return self
+
     def predict(self, text: str) -> str:
         """Sửa lỗi cho 1 câu đơn."""
         if not text or not text.strip():
@@ -128,11 +156,8 @@ class Seq2SeqCorrector:
             outputs = self.model.generate(
                 **inputs,
                 max_new_tokens=dynamic_max_tokens,
-                num_beams=5,
                 early_stopping=True,
-                no_repeat_ngram_size=3,
-                repetition_penalty=1.2,
-                length_penalty=1.0,
+                **self.generate_kwargs,
             )
 
         clean_text = self.tokenizer.decode(outputs[0], skip_special_tokens=True)
@@ -164,11 +189,8 @@ class Seq2SeqCorrector:
                 outputs = self.model.generate(
                     **inputs,
                     max_new_tokens=dynamic_max_tokens,
-                    num_beams=5,
                     early_stopping=True,
-                    no_repeat_ngram_size=3,
-                    repetition_penalty=1.2,
-                    length_penalty=1.0,
+                    **self.generate_kwargs,
                 )
 
             batch_results = [

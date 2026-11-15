@@ -25,6 +25,7 @@ python-multipart>=0.0.9
 
 # Dev & Utilities
 python-dotenv>=1.0.1
+markdown-it-py>=3.0.0
 tqdm>=4.66.0
 pandas>=2.2.0
 openpyxl>=3.1.0

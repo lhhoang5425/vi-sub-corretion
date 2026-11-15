@@ -107,6 +107,40 @@ class SRTSubtitleProcessor:
         else:
             return self._compose_fallback(subtitles)
 
+    def process_srt_pairs(self, srt_content: str, batch_size: int = 16) -> List[dict]:
+        """Trả về danh sách từng block phụ đề kèm cặp văn bản gốc / đã sửa.
+
+        Dùng cho giao diện Web hiển thị bảng đối chiếu song song, nơi cần giữ
+        riêng biệt câu ASR thô và câu đã chuẩn hóa thay vì chỉ chuỗi SRT cuối.
+        """
+        if not srt_content.strip():
+            return []
+
+        if srt is not None:
+            subtitles = list(srt.parse(srt_content))
+            raw_texts = [sub.content.replace("\n", " ").strip() for sub in subtitles]
+        else:
+            subtitles = self._parse_fallback(srt_content)
+            raw_texts = [sub.content for sub in subtitles]
+
+        if self.corrector_model is not None:
+            cleaned_texts = self.corrector_model.predict_batch(raw_texts, batch_size=batch_size)
+        else:
+            cleaned_texts = raw_texts
+
+        pairs = []
+        for sub, original, corrected in zip(subtitles, raw_texts, cleaned_texts):
+            pairs.append(
+                {
+                    "index": sub.index,
+                    "start": _format_srt_timestamp(sub.start),
+                    "end": _format_srt_timestamp(sub.end),
+                    "original": original,
+                    "corrected": corrected,
+                }
+            )
+        return pairs
+
     def srt_to_txt(self, srt_content: str) -> str:
         """Trích xuất văn bản thuần túy từ tệp phụ đề .srt (loại bỏ timestamps và số thứ tự).
         
