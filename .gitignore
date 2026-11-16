@@ -65,8 +65,10 @@ Thumbs.db
 
 # Tài liệu nội bộ - KHÔNG đưa lên git
 # TONG_HOP.md  : nhật ký handoff, đọc một lượt là nắm dự án đang tới đâu
+# handoff/     : tài liệu bàn giao giữa các phiên làm việc
 # BAO_CAO_*.md : bản phân tích chi tiết; bản nộp là DE_CUONG_NLP28
 TONG_HOP.md
+handoff/
 BAO_CAO_NLP28.md
 BAO_CAO_NLP28.pdf
 BAO_CAO_NLP28.html

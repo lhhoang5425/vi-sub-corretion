@@ -223,7 +223,7 @@ def train():
         "learning_rate": args.lr,
         "num_train_epochs": args.epochs,
         "weight_decay": 0.01,
-        "label_smoothing": args.label_smoothing,
+        "label_smoothing_factor": args.label_smoothing,
         "fp16": device == "cuda",
         "logging_steps": 50,
         "report_to": "none",
