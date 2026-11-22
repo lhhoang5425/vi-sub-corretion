@@ -9,11 +9,18 @@
 ---
 
 ## 1. Giới thiệu & Phát biểu bài toán (Problem Statement)
-* **Bối cảnh & Động lực:** Đầu ra của các hệ thống nhận dạng tiếng nói tự động tiếng Việt (như Whisper, Wav2Vec2) thường xuyên gặp các lỗi: mất dấu câu, viết thường toàn bộ, sai dấu thanh do phát âm, sai từ đồng âm địa phương (`ch/tr`, `s/x`, `d/gi/r`, `l/n`) hoặc đứt gãy ngữ nghĩa.
-* **Đầu vào (Input):** Câu văn bản tiếng Việt hoặc tệp phụ đề định dạng `.srt` xuất phát từ hệ thống ASR (có thể có lỗi hoặc câu vốn đã đúng ngữ pháp).
-* **Đầu ra (Output):** Phát hiện loại lỗi, vị trí sửa và câu văn / tệp phụ đề `.srt` đã được khôi phục dấu câu, viết hoa, sửa lỗi chính tả ngữ pháp, bảo toàn nguyên vẹn ý nghĩa ban đầu và mốc thời gian (timestamps).
+* **Khái niệm ASR & Mối liên hệ với Whisper:**
+  * **ASR (Automatic Speech Recognition - Nhận dạng giọng nói tự động):** Là thuật ngữ chuyên ngành chỉ công nghệ chuyển đổi âm thanh giọng nói (Audio/Speech) thành văn bản (Text / Speech-to-Text).
+  * **Whisper (OpenAI):** Là một mô hình ASR tiên tiến mã nguồn mở tiêu biểu hiện nay, có khả năng nghe video/audio tiếng Việt và xuất ra chuỗi phụ đề kèm mốc thời gian (file `.srt`).
+  * **Vấn đề cốt lõi của ASR tiếng Việt:** Đầu ra từ Whisper hoặc các hệ thống ASR thường xuyên bị lỗi: mất dấu câu, viết thường toàn bộ (không viết hoa đầu câu/tên riêng), mất dấu thanh do phát âm (`toi di lam`), nhầm từ đồng âm địa phương (`ch/tr`, `s/x`, `d/gi/r`, `l/n`) hoặc đứt gãy ngữ nghĩa câu nói tự nhiên.
+  * **Định vị đề tài (ASR Post-Correction):** Đề tài của nhóm **không phải là mô hình nhận dạng giọng nói từ audio**, mà đóng vai trò là **hệ thống hậu xử lý và khử nhiễu văn bản (Post-Correction & Normalization)** đứng ngay sau Whisper/ASR nhằm chuẩn hóa văn bản trước khi xuất bản phụ đề.
+* **Lộ trình triển khai 2 giai đoạn (Two-Phase Implementation Roadmap):**
+  * **Giai đoạn 1 (GD1 - Trọng tâm cốt lõi hiện tại):** Xây dựng và tối ưu hóa mô hình ngôn ngữ Sequence-to-Sequence (Seq2Seq Transformer) trên dữ liệu văn bản câu đơn và bộ kiểm thử chuẩn Gold Test. Ở giai đoạn này, nhóm tập trung giải quyết triệt để bài toán NLP cốt lõi: mô phỏng chính xác các dạng nhiễu đặc thù của ASR (mất dấu thanh, mất dấu câu, viết thường, lỗi ngữ âm), sau đó huấn luyện mô hình khôi phục dấu câu, viết hoa, thêm dấu tiếng Việt và sửa lỗi chính tả mà không làm thay đổi ý nghĩa câu.
+  * **Giai đoạn 2 (GD2 - Kế hoạch mở rộng ứng dụng tiếp theo):** Tích hợp mô hình đã tối ưu ở GD1 vào pipeline xử lý trực tiếp tệp phụ đề video thực tế (`.srt`) xuất ra từ Whisper. Hệ thống sẽ bóc tách luồng text và mốc thời gian, đưa text qua mô hình khử nhiễu tự động và ghép nối (re-compose) bảo toàn 100% timestamps để xuất tệp phụ đề video hoàn chỉnh.
+* **Đầu vào (Input - GD1):** Câu văn bản tiếng Việt từ nhận dạng giọng nói ASR (có thể có lỗi hoặc câu vốn đã đúng ngữ pháp).
+* **Đầu ra (Output - GD1):** Phát hiện loại lỗi, vị trí sửa và câu văn tiếng Việt đã được khôi phục dấu câu, viết hoa đúng vị trí, sửa lỗi chính tả ngữ pháp, bảo toàn nguyên vẹn ý nghĩa ban đầu.
 * **Mục tiêu thực nghiệm & Giả thuyết nghiên cứu:**
-  * Xây dựng pipeline hoàn chỉnh từ dữ liệu, huấn luyện đến suy luận và đánh giá với schema rõ ràng.
+  * Xây dựng pipeline hoàn chỉnh từ dữ liệu, huấn luyện đến suy luận và đánh giá với schema rõ ràng trong GD1.
   * Kiểm chứng giả thuyết: *Mô hình ngôn ngữ Sequence-to-Sequence (Seq2Seq Transformer) có khả năng tận dụng ngữ cảnh toàn câu để sửa lỗi ASR vượt trội hơn hẳn các phương pháp tra cứu từ điển / luật thông thường.*
   * Báo cáo đầy đủ chỉ số định lượng, chi phí thực hiện, phân tích hiện tượng over-correction (sửa nhầm câu đúng) và các trường hợp biên.
 
