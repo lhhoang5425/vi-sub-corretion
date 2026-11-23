@@ -1,0 +1,726 @@
+==============================================================================
+LOG ĐÁNH GIÁ BENCHMARK ĐỀ TÀI NLP-28
+Sửa lỗi & chuẩn hóa phụ đề tiếng Việt từ ASR bằng mô hình Seq2Seq
+==============================================================================
+Thời điểm chạy : 2026-11-21T17:32:42+00:00
+Thiết bị       : GPU/Colab
+Tập kiểm thử   : data/gold_test/gd2_real_asr/kichban_test.jsonl (132 mẫu)
+Mô hình Seq2Seq: /content/drive/MyDrive/vi-sub-correction/checkpoints/bmd1905-sub-corrector_lan5_asr_hard_full_ls1
+Engine đo được : seq2seq
+Batch size     : 16
+
+==============================================================================
+1. BẢNG TỔNG HỢP CHỈ SỐ ĐỐI ĐẦU
+==============================================================================
+### Bảng kết quả Benchmark định lượng (Tập Test: 132 mẫu)
+
+| Phương pháp | BLEU ↑ | WER (%) ↓ | CER (%) ↓ | Exact Match (%) ↑ | ROUGE-L (%) ↑ | Edit-P (%) ↑ | Edit-R (%) ↑ | Edit-F1 (%) ↑ |
+| :--- |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline 1 (Identity)** | **79.66** | **6.36%** | 3.91% | **54.55%** | 93.95% | 0.00% | 0.00% | **0.00%** |
+| **Baseline 2 (Rule & Dictionary)** | **79.66** | **8.59%** | 4.43% | **35.61%** | 91.48% | 0.00% | 0.00% | **0.00%** |
+| **Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1)** | **79.66** | **9.61%** | 5.57% | **34.85%** | 90.69% | 3.45% | 6.25% | **4.44%** |
+
+*Ghi chú chỉ số:*
+- **BLEU / ROUGE-L ↑**: độ tương đồng với câu chuẩn (BLEU thiên về n-gram khớp hẳn, ROUGE-L thiên về bao phủ).
+- **WER ↓ / CER ↓**: tỷ lệ lệch ở mức từ và mức KÝ TỰ. CER mới thấy được lỗi thiếu dấu thanh,
+  vì WER vẫn đếm một từ sai dấu là đúng 1 từ sai dù chỉ lệch một ký tự.
+- **Exact Match ↑**: tỷ lệ câu trùng 100% đáp án chuẩn. Con số dễ đọc nhất cho hội đồng.
+- **Edit-P ↑**: trong các câu mô hình đụng vào sửa, bao nhiêu % sửa đúng đích (càng thấp càng over-correct).
+- **Edit-R ↑**: bao nhiêu % câu cần sửa thì được can thiệp (100% = không bỏ sót câu nào).
+- **Edit-F1 ↑**: trung bình điều hòa của Edit-P và Edit-R.
+
+==============================================================================
+2. HIỆU NĂNG TÁCH THEO LOẠI LỖI
+==============================================================================
+
+### Bảng hiệu năng theo loại lỗi (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+
+| Loại lỗi | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| asr_real | 132 | 34.85 | 5.57 | 79.66 | 4.44 |
+| low_confidence | 19 | 0.00 | 14.38 | 67.61 | 0.00 |
+
+*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*
+*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*
+
+==============================================================================
+3. CHI TIẾT SỐ CÂU THUỘC TỪNG NHÓM SỬA LỖI
+==============================================================================
+  Baseline 1 (Identity)              sua dung   0 | sua nham   0 | bo sot  60 | giu dung  72
+  Baseline 2 (Rule & Dictionary)     sua dung   0 | sua nham  42 | bo sot  43 | giu dung  47
+  Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1) sua dung   2 | sua nham  56 | bo sot  30 | giu dung  44
+
+  ('sua nham' gom ca over-correction: câu vốn đúng bị sửa tới.)
+
+
+==============================================================================
+PHÂN TÍCH TỪNG CÂU (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+==============================================================================
+
+[1] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Xin chào tất cả quý vị và các bạn cùng đến với chương trình tổ buồn 247.
+    Dap an    : Xin chào tất cả quý vị và các bạn cùng đến với chương trình Tổ Buôn 247.
+    Mo hinh   : Xin chào tất cả quý vị và các bạn cùng đến với chương trình tổ buồn 247.
+
+[2] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Ngày hôm nay thì câu chuyện khóa học làm dầu có giá lên tới 1,4 tỷ,
+    Dap an    : Ngày hôm nay thì câu chuyện khóa học làm giàu có giá lên tới 1,4 tỷ,
+    Mo hinh   : Ngày hôm nay thì câu chuyện học làm dầu có giá lên tới 153 tỷ
+
+[3] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : nhưng giảm xuống còn có 300 triệu đang trở thành tâm điểm của mạng xã hội.
+    Dap an    : nhưng giảm xuống còn có 300 triệu đang trở thành tâm điểm của mạng xã hội.
+    Mo hinh   : Nhưng giảm xuống còn có 300 triệu đang trở thành tâm điểm của mạng xã hội.
+
+[4] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Đi đâu người ta cũng bàn tán về khóa học này, nào là đắt quá diễn giả mặt búng ra sữa,
+    Dap an    : Đi đâu người ta cũng bàn tán về khóa học này, nào là đắt quá diễn giả mặt búng ra sữa,
+    Mo hinh   : Đi đâu người ta cũng bàn tán về học này, nào là đắt quá diễn giả mặt búng ra sữa
+
+[5] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : thì không hiểu là dậy kinh doanh rồi thì tư vấn về kinh doanh kiểu gì, chắc cũng là loại lùa gà thôi.
+    Dap an    : thì không hiểu là dạy kinh doanh rồi thì tư vấn về kinh doanh kiểu gì, chắc cũng là loại lùa gà thôi.
+    Mo hinh   : thì không hiểu là dậy kinh doanh rồi thì tư vấn về kinh doanh kiểu gì, chắc cũng là loại lùa gà thôi.
+
+[6] (asr_real)  ket qua: DUNG
+    ASR goc   : Nhiều người còn cho rằng đây nó là một cái kiểu lừa đảo biến tướng mà cần phải bị dẹp bỏ.
+    Dap an    : Nhiều người còn cho rằng đây nó là một cái kiểu lừa đảo biến tướng mà cần phải bị dẹp bỏ.
+    Mo hinh   : Nhiều người còn cho rằng đây nó là một cái kiểu lừa đảo biến tướng mà cần phải bị dẹp bỏ.
+
+[7] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Thôi thì câu chuyện bán khóa học kiểu này có phải lừa đảo hay không,
+    Dap an    : Thôi thì câu chuyện bán khóa học kiểu này có phải lừa đảo hay không,
+    Mo hinh   : Hiểu thì câu chuyện bán học kiểu này có phải lừa đảo hay không
+
+[8] (asr_real)  ket qua: DUNG
+    ASR goc   : thì cái đó cần tới cơ quan chức năng mới có thể kết luận được.
+    Dap an    : thì cái đó cần tới cơ quan chức năng mới có thể kết luận được.
+    Mo hinh   : thì cái đó cần tới cơ quan chức năng mới có thể kết luận được.
+
+[9] (asr_real)  ket qua: DUNG
+    ASR goc   : Chứ còn anh em mình ở ngoài thì chưa ai có thể khẳng định bất cứ điều gì cả.
+    Dap an    : Chứ còn anh em mình ở ngoài thì chưa ai có thể khẳng định bất cứ điều gì cả.
+    Mo hinh   : Chứ còn anh em mình ở ngoài thì chưa ai có thể khẳng định bất cứ điều gì cả.
+
+[10] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Ai thấy phù hợp thì đi học, còn ai thấy không phù hợp thì thôi.
+    Dap an    : Ai thấy phù hợp thì đi học, còn ai thấy không phù hợp thì thôi.
+    Mo hinh   : Ai thấy phù hợp thì đi học, còn ai thấy không phù hợphì thôi.
+
+[11] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Chứ bây giờ cứ ngồi ngoài kết luận như vậy là lùa gà,
+    Dap an    : Chứ bây giờ cứ ngồi ngoài kết luận như vậy là lùa gà,
+    Mo hinh   : Chứ bây giờ cứ ngồi ngoài kết luận như vậy là lùa gà
+
+[12] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : giá như vậy là quá đắt thì nó cũng chẳng có gì thuyết phục cả,
+    Dap an    : giá như vậy là quá đắt thì nó cũng chẳng có gì thuyết phục cả,
+    Mo hinh   : Giá như vậy là quá đắt thì nó cũng chẳng có gì thuyết phục cả
+
+[13] (asr_real)  ket qua: DUNG
+    ASR goc   : đắt hay rẻ nó còn phụ thuộc vào cung cầu nữa cơ.
+    Dap an    : đắt hay rẻ nó còn phụ thuộc vào cung cầu nữa cơ.
+    Mo hinh   : đắt hay rẻ nó còn phụ thuộc vào cung cầu nữa cơ.
+
+[14] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nhiều người lại còn lôi cả ngoại hình của diễn giả ra để công kích,
+    Dap an    : Nhiều người lại còn lôi cả ngoại hình của diễn giả ra để công kích,
+    Mo hinh   : Nhiều người lại còn lôi cả ngoại hình của diễn giả ra để công kích
+
+[15] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : nhằm cùng cố cho việc họ đang lùa gà thì để mà nói nó cũng rất là ôi rồi ôi.
+    Dap an    : nhằm củng cố cho việc họ đang lùa gà thì để mà nói nó cũng rất là ôi rồi ôi.
+    Mo hinh   : nhằm cùng cố cho việc họ đang lùa gà thì để mà nói nó cũng rất là ôi rồi ôi.
+
+[16] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Cái chuyện mà diễn giả mặt búng ra sữa hay là diễn giả mặt rất là như đi dậy học vậy thì nó cũng chẳng nói lên điều gì cả.
+    Dap an    : Cái chuyện mà diễn giả mặt búng ra sữa hay là diễn giả mặt rất là như đi dạy học vậy thì nó cũng chẳng nói lên điều gì cả.
+    Mo hinh   : Cái chuyện mà diễn viên mặt búng ra sữa hay là diễn giả mặt rất là như đi dậy học vậy thì nó cũng chẳng nói lên điều gì cả.
+
+[17] (asr_real)  ket qua: DUNG
+    ASR goc   : Một số người họ già thật đấy nhưng mà họ chỉ hơn mình mỗi cái tuổi thôi.
+    Dap an    : Một số người họ già thật đấy nhưng mà họ chỉ hơn mình mỗi cái tuổi thôi.
+    Mo hinh   : Một số người họ già thật đấy nhưng mà họ chỉ hơn mình mỗi cái tuổi thôi.
+
+[18] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Chứ họ có kinh nghiệm gì để chuyên đặt lại đâu.
+    Dap an    : Chứ họ có kinh nghiệm gì để chuyên tâm dạy lại đâu.
+    Mo hinh   : Chứ họ có kinh nghiệm gì để chuyên đặt lại đâu.
+
+[19] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Thế nhưng mà ngược lại, rất nhiều người trẻ họ lại đang thành công dực rỡ,
+    Dap an    : Thế nhưng mà ngược lại, rất nhiều người trẻ họ lại đang thành công rực rỡ,
+    Mo hinh   : Thế nhưng mà ngược lại, rất nhiều người trẻ họ lại đang thành công rực rỡ
+
+[20] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : họ điều hành đủ các loại doanh nghiệp thì kêu việc mà họ đứng ở trên bục họ dậy rỗ người khác,
+    Dap an    : họ điều hành đủ các loại doanh nghiệp thì kiêm việc mà họ đứng ở trên bục họ dạy dỗ người khác,
+    Mo hinh   : Họ điều hành đủ các loại doanh nghiệp thì kêu việc mà họ đứng ở trên bục họ dậy rỗ người khác
+
+[21] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : nó cũng là chuyện vô cùng bình thường.
+    Dap an    : nó cũng là chuyện vô cùng bình thường.
+    Mo hinh   : Nó cũng là chuyện vô cùng bình thường.
+
+[22] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Biết bao nhiêu tỉ phú ở trên thế giới hiện tại họ đều là những người trẻ mang đấy thôi,
+    Dap an    : Biết bao nhiêu tỉ phú ở trên thế giới hiện tại họ đều là những người trẻ mà đấy thôi,
+    Mo hinh   : Biết bao nhiêu tỉ phú ở trên thế giới hiện tại họ đều là những người trẻ mang đấy
+
+[23] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : bin ghét hay là mắc rất cơ bớt, 19 tuổi đã thành công rồi mà.
+    Dap an    : Bill Gates hay là Mark Zuckerberg, 19 tuổi đã thành công rồi mà.
+    Mo hinh   : Bin ghét hay là mắc rất cơ bớt, 19 tuổi đã thành công rồi mà.
+
+[24] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Nếu mà học được những cái hay từ những con người đó để áp dụng vào cuộc sống của mình thì nó trả tốt quá đi ấy trừ.
+    Dap an    : Nếu mà học được những cái hay từ những con người đó để áp dụng vào cuộc sống của mình thì nó quá tốt đi ấy chứ.
+    Mo hinh   : Nếu mà học được những cái hay từ những con người đó để áp dụng vào cuộc sống của mình thì nó trả tốt quá đi ấy trừ.
+
+[25] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Biết bao nhiêu các giám đốc doanh nghiệp sừng sỏ,
+    Dap an    : Biết bao nhiêu các giám đốc doanh nghiệp sừng sỏ,
+    Mo hinh   : Biết bao nhiêu các giám đốc doanh nghiệp sừng sỏ
+
+[26] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : họ vẫn đang phải học hỏi chính những đứa con mà mình đẻ ra vì chính cái bọn trẻ con đấy,
+    Dap an    : họ vẫn đang phải học hỏi chính những đứa con mà mình đẻ ra vì chính cái bọn trẻ con đấy,
+    Mo hinh   : Họ vẫn đang phải học hỏi chính những đứa con mà mình đẻ ra vì chính cái lũ trẻ con đấy
+
+[27] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : nó mới là cái đội siêu siêu rõi luôn,
+    Dap an    : nó mới là cái đội siêu siêu giỏi luôn,
+    Mo hinh   : Nó mới là cái đội siêu siêu rõi luôn
+
+[28] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : nó đẻ ra một cái thôi, nó đã biết bơi bố nó rồi.
+    Dap an    : nó đẻ ra một cái thôi, nó đã biết bơi trước bố nó rồi.
+    Mo hinh   : Nó đẻ ra một cái thôi, nó đã biết bơi bố nó rồi.
+
+[29] (asr_real)  ket qua: DUNG
+    ASR goc   : Trong khi đó, đầy người lớn ở ngoài kia đã biết bơi đâu, đúng không?
+    Dap an    : Trong khi đó, đầy người lớn ở ngoài kia đã biết bơi đâu, đúng không?
+    Mo hinh   : Trong khi đó, đầy người lớn ở ngoài kia đã biết bơi đâu, đúng không?
+
+[30] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế rồi nhé, thì trẻ con nó còn có đủ phẩm chất của một người thành công nữa cơ.
+    Dap an    : Thế rồi nhé, thì trẻ con nó còn có đủ phẩm chất của một người thành công nữa cơ.
+    Mo hinh   : Thế rồi nhé, thì trẻ con nó còn có đủ phẩm chất của một người thành công nữa cơ.
+
+[31] (asr_real)  ket qua: DUNG
+    ASR goc   : Không tin anh em cứ ngẫm mà xem, người thành công cần phải có cái tính to mò đúng không?
+    Dap an    : Không tin anh em cứ ngẫm mà xem, người thành công cần phải có cái tính tò mò đúng không?
+    Mo hinh   : Không tin anh em cứ ngẫm mà xem, người thành công cần phải có cái tính tò mò đúng không?
+
+[32] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Cái gì cũng cần phải đặt câu hỏi, kể cả là những câu hỏi ngỡ ngẩn nhất.
+    Dap an    : Cái gì cũng cần phải đặt câu hỏi, kể cả là những câu hỏi ngớ ngẩn nhất.
+    Mo hinh   : Cái gì cũng cần phải đặt câu hỏi, kể cả là những câu hỏi ngỡ ngẩn nhất.
+
+[33] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Vậy thì thử hỏi, có ai to mò hơn bọn trẻ con không?
+    Dap an    : Vậy thì thử hỏi, có ai tò mò hơn bọn trẻ con không?
+    Mo hinh   : Vậy thì thử hỏi, có ai tò mò hơn lũ trẻ con không?
+
+[34] (asr_real)  ket qua: DUNG
+    ASR goc   : Cái gì nó cũng hỏi luôn, nó hỏi mà bố mẹ nó nhức hết cả đầu luôn.
+    Dap an    : Cái gì nó cũng hỏi luôn, nó hỏi mà bố mẹ nó nhức hết cả đầu luôn.
+    Mo hinh   : Cái gì nó cũng hỏi luôn, nó hỏi mà bố mẹ nó nhức hết cả đầu luôn.
+
+[35] (asr_real)  ket qua: DUNG
+    ASR goc   : Cái nhân tố thứ 2 để thành công đó là kiên trì thì cũng vậy.
+    Dap an    : Cái nhân tố thứ 2 để thành công đó là kiên trì thì cũng vậy.
+    Mo hinh   : Cái nhân tố thứ 2 để thành công đó là kiên trì thì cũng vậy.
+
+[36] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Thử hỏi có ai kiên trì hơn bọn trẻ con đâu?
+    Dap an    : Thử hỏi có ai kiên trì hơn bọn trẻ con đâu?
+    Mo hinh   : Thử hỏi có ai kiên trì hơn lũ trẻ con đâu?
+
+[37] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nó đã đòi cái gì ấy thì nó khóc, nó quấy, nó ăn vạy, nó làm đủ mọi cách để đạt được thì thôi.
+    Dap an    : Nó đã đòi cái gì ấy thì nó khóc, nó quấy, nó ăn vạ, nó làm đủ mọi cách để đạt được thì thôi.
+    Mo hinh   : Nó đã đòi cái gì ấy thì nó khóc, nó quấy, nó ăn vạy, it làm đủ mọi cách để đạt được thì thôi.
+
+[38] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Người lớn hứa với nó cái gì mà không làm ấy thì chết với chúng nó luôn, nó nhớ dài vô cùng kẻ.
+    Dap an    : Người lớn hứa với nó cái gì mà không làm ấy thì chết với chúng nó luôn, nó nhớ dai vô cùng nhé.
+    Mo hinh   : Người lớn hứa với nó cái gì mà không làm ấy thì chết với chúng nó luôn, nó nhớ dài vô cùng kẻ.
+
+[39] (asr_real)  ket qua: DUNG
+    ASR goc   : Thử hứa bừa với nó một câu xem.
+    Dap an    : Thử hứa bừa với nó một câu xem.
+    Mo hinh   : Thử hứa bừa với nó một câu xem.
+
+[40] (asr_real)  ket qua: DUNG
+    ASR goc   : Nhân tố thứ 3 để thành công đó là cái khả năng thích nghi.
+    Dap an    : Nhân tố thứ 3 để thành công đó là cái khả năng thích nghi.
+    Mo hinh   : Nhân tố thứ 3 để thành công đó là cái khả năng thích nghi.
+
+[41] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nhất là trong thời buổi AI đang phát triển trống mặt như hiện tại,
+    Dap an    : Nhất là trong thời buổi AI đang phát triển trống mặt như hiện tại,
+    Mo hinh   : Nhất là trong thời buổi AI đang phát triển trống mặt như hiện tại
+
+[42] (asr_real)  ket qua: DUNG
+    ASR goc   : thì cái khả năng thích nghi ấy nó lại càng được đề cao hơn.
+    Dap an    : thì cái khả năng thích nghi ấy nó lại càng được đề cao hơn.
+    Mo hinh   : thì cái khả năng thích nghi ấy nó lại càng được đề cao hơn.
+
+[43] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : Thế nhưng mà thử hỏi có người lớn nào thích nghi nhanh được như bọn trẻ con hay không người trảy?
+    Dap an    : Thế nhưng mà thử hỏi có người lớn nào thích nghi nhanh được như bọn trẻ con hay không nào?
+    Mo hinh   : Thế nhưng mà thử hỏi có người lớn nào thích nghi nhanh được như nhóm trẻ con hay không người trảy?
+
+[44] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Ê, vật vào một môi trường mới nhé.
+    Dap an    : Ê, vứt vào một môi trường mới nhé.
+    Mo hinh   : Ê, vật vào một môi trường mới nhé.
+
+[45] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Chắc chắn 100% cái bọn trẻ con nó sẽ thích nghi nhanh hơn người lớn rất rất nhiều.
+    Dap an    : Chắc chắn 100% cái bọn trẻ con nó sẽ thích nghi nhanh hơn người lớn rất rất nhiều.
+    Mo hinh   : Chắc chắn 100% cái lũ trẻ con nó sẽ thích nghi nhanh hơn người lớn rất rất nhiều.
+
+[46] (asr_real)  ket qua: DUNG
+    ASR goc   : Là người lớn mình đã thua trẻ con rồi.
+    Dap an    : Là người lớn mình đã thua trẻ con rồi.
+    Mo hinh   : Là người lớn mình đã thua trẻ con rồi.
+
+[47] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Vậy thì cái việc một đứa trẻ nó đứng lên, nó làm diễn giả, nó dậy dỗ như người ở dưới.
+    Dap an    : Vậy thì cái việc một đứa trẻ nó đứng lên, nó làm diễn giả, nó dạy dỗ cho người ở dưới.
+    Mo hinh   : Vậy thì cái việc một đứa trẻ nó đứng lên, nó làm diễn giả, nó dậy dỗ như người ở dưới.
+
+[48] (asr_real)  ket qua: DUNG
+    ASR goc   : Nó cũng chẳng có gì đáng để cười cả.
+    Dap an    : Nó cũng chẳng có gì đáng để cười cả.
+    Mo hinh   : Nó cũng chẳng có gì đáng để cười cả.
+
+[49] (asr_real)  ket qua: DUNG
+    ASR goc   : Vấn đề nó không nằm ở chuyện người đó bao nhiêu tuổi.
+    Dap an    : Vấn đề nó không nằm ở chuyện người đó bao nhiêu tuổi.
+    Mo hinh   : Vấn đề nó không nằm ở chuyện người đó bao nhiêu tuổi.
+
+[50] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Mà cái chính là họ đã thực sự làm được những gì,
+    Dap an    : Mà cái chính là họ đã thực sự làm được những gì,
+    Mo hinh   : Mà cái chính là họ đã thực sự làm được những gì
+
+[51] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : họ thành công đến đâu và họ có khả năng truyền đạt cho người nghe như thế nào.
+    Dap an    : họ thành công đến đâu và họ có khả năng truyền đạt cho người nghe như thế nào.
+    Mo hinh   : Họ thành công đến đâu và họ có khả năng truyền đạt cho người nghe như thế nào.
+
+[52] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : Đấy mới là cái đáng để xóa vào nhất.
+    Dap an    : Đấy mới là cái đáng để xoáy vào nhất.
+    Mo hinh   : Đấy mới là cái đáng để vào nhất.
+
+[53] (asr_real)  ket qua: DUNG
+    ASR goc   : Nhiều người cứ mang cái mác là đã từng làm cho doanh nghiệp này tập đoàn kia.
+    Dap an    : Nhiều người cứ mang cái mác là đã từng làm cho doanh nghiệp này tập đoàn kia.
+    Mo hinh   : Nhiều người cứ mang cái mác là đã từng làm cho doanh nghiệp này tập đoàn kia.
+
+[54] (asr_real)  ket qua: DUNG
+    ASR goc   : Họ có bằng cấp này nữa.
+    Dap an    : Họ có bằng cấp này nữa.
+    Mo hinh   : Họ có bằng cấp này nữa.
+
+[55] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế nhưng lăng lực thực tế của họ như thế nào ấy thì đấy mới là cái đáng để xét.
+    Dap an    : Thế nhưng năng lực thực tế của họ như thế nào ấy thì đấy mới là cái đáng để xét.
+    Mo hinh   : Thế nhưng năng lực thực tế của họ như thế nào ấy thì đấy mới là cái đáng để xét.
+
+[56] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Giới thiệu diễn giả là người từng làm chức nọa trước kia ở Hugo.
+    Dap an    : Giới thiệu diễn giả là người từng làm chức nọ kia trước kia ở Hugo.
+    Mo hinh   : Giới thiệu diễn giả là người từng làm chức nọa trước kia ở Hugo.
+
+[57] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế nhưng mà thực tế là như nào hồi ở Hugo có làm được cái gì hoành tráng hay không?
+    Dap an    : Thế nhưng mà thực tế là như nào hồi ở Hugo có làm được cái gì hoành tráng hay không?
+    Mo hinh   : Thế nhưng mà thực tế là như nào hồi ở Hugo có làm được cái gì hoành tráng hay không?
+
+[58] (asr_real)  ket qua: DUNG
+    ASR goc   : Hay là không làm được nên bị Hugo đuổi.
+    Dap an    : Hay là không làm được nên bị Hugo đuổi.
+    Mo hinh   : Hay là không làm được nên bị Hugo đuổi.
+
+[59] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Và bây giờ về nhà đi làm diễn giả thì báo chí cũng đã từng nhắc rất nhiều lần
+    Dap an    : Và bây giờ về nhà đi làm diễn giả thì báo chí cũng đã từng nhắc rất nhiều lần
+    Mo hinh   : Và bây giờ, về nhà đi làm diễn giả, thì báo chí cũng đã từng nhắc rất nhiều lần.
+
+[60] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : đến các diễn giả dậy làm dầu.
+    Dap an    : đến các diễn giả dạy làm giàu.
+    Mo hinh   : Đến các diễn giả dậy làm dầu.
+
+[61] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Thế nhưng mà công ty của họ lại lỗ trỏng vó ra đây thôi.
+    Dap an    : Thế nhưng mà công ty của họ lại lỗ chỏng vó ra đây thôi.
+    Mo hinh   : Thế nhưng mà công ty của họ lại lỗ trỏng vó ra đây thôi.
+
+[62] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : Thế thôi thì ở trên thế giới tác giả của cuốn tra, dầu tra, nghèo, nghèo, hoành tráng ấy.
+    Dap an    : Thế thôi thì ở trên thế giới tác giả của cuốn Cha giàu Cha nghèo hoành tráng ấy.
+    Mo hinh   : Thế thôi thì ở trên thế giới tác giả của cuốn tra, dầu tra, nghèo, nghèo 2014, hoành tráng ấy.
+
+[63] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Nhưng mà công ty của ông ấy cũng mấy lần xin phát sản rồi còn gì nữa.
+    Dap an    : Nhưng mà công ty của ông ấy cũng mấy lần xin phá sản rồi còn gì nữa.
+    Mo hinh   : Nhưng mà công ty của ông ấy cũng mấy lần xin phát sản rồi còn gì nữa.
+
+[64] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Thôi thì việc bằng cấp kiến thức hay là thành tích của các diễn giả như thế nào
+    Dap an    : Thôi thì việc bằng cấp kiến thức hay là thành tích của các diễn giả như thế nào
+    Mo hinh   : Vậy thì việc bằng cấp kiến thức hay là thành tích của các diễn giả như thế nào?
+
+[65] (asr_real)  ket qua: DUNG
+    ASR goc   : thì cái đó có lẽ phải để cho cộng đồng mạng, để cho học viên hoặc là để chính diễn giả đó chính mình.
+    Dap an    : thì cái đó có lẽ phải để cho cộng đồng mạng, để cho học viên hoặc là để chính diễn giả đó chính mình.
+    Mo hinh   : thì cái đó có lẽ phải để cho cộng đồng mạng, để cho học viên hoặc là để chính diễn giả đó chính mình.
+
+[66] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Thế nhưng có một cái điều chắc chắn bạn sẽ không bao giờ nhận được ở các cái lớp dậy làm dầu.
+    Dap an    : Thế nhưng có một cái điều chắc chắn bạn sẽ không bao giờ nhận được ở các cái lớp dạy làm giàu.
+    Mo hinh   : Thế nhưng có một cái điều chắc chắn bạn sẽ không bao giờ nhận được ở các cái lớp dậy làm dầu.
+
+[67] (asr_real)  ket qua: DUNG
+    ASR goc   : Đó chính là công thức để thành công.
+    Dap an    : Đó chính là công thức để thành công.
+    Mo hinh   : Đó chính là công thức để thành công.
+
+[68] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Đây nó là một cái không bao giờ tồn tại trên đời được
+    Dap an    : Đây nó là một cái không bao giờ tồn tại trên đời được
+    Mo hinh   : Đây là một cái không bao giờ tồn tại trên đời được.
+
+[69] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : vì ngay từ cái định nghĩa về thành công nó đã có vấn đề rồi.
+    Dap an    : vì ngay từ cái định nghĩa về thành công nó đã có vấn đề rồi.
+    Mo hinh   : Vì ngay từ cái định nghĩa về thành công nó đã có vấn đề rồi.
+
+[70] (asr_real)  ket qua: DUNG
+    ASR goc   : Mỗi người định nghĩa về thành công một cách khác nhau.
+    Dap an    : Mỗi người định nghĩa về thành công một cách khác nhau.
+    Mo hinh   : Mỗi người định nghĩa về thành công một cách khác nhau.
+
+[71] (asr_real)  ket qua: DUNG
+    ASR goc   : Người thì cho rằng phải nhiều tiền mới là người thành công.
+    Dap an    : Người thì cho rằng phải nhiều tiền mới là người thành công.
+    Mo hinh   : Người thì cho rằng phải nhiều tiền mới là người thành công.
+
+[72] (asr_real)  ket qua: DUNG
+    ASR goc   : Nó không có tiền thì đừng có nổ.
+    Dap an    : Nó không có tiền thì đừng có nổ.
+    Mo hinh   : Nó không có tiền thì đừng có nổ.
+
+[73] (asr_real)  ket qua: DUNG
+    ASR goc   : Ê thế nhưng mà có người đã cho rằng đời sống tinh thần nó thoải mái nhất mới là người thành công, đúng không?
+    Dap an    : Ê thế nhưng mà có người đã cho rằng đời sống tinh thần nó thoải mái nhất mới là người thành công, đúng không?
+    Mo hinh   : Ê thế nhưng mà có người đã cho rằng đời sống tinh thần nó thoải mái nhất mới là người thành công, đúng không?
+
+[74] (asr_real)  ket qua: DUNG
+    ASR goc   : Nhiều tiền cũng chỉ để phục vụ đời sống tinh thần.
+    Dap an    : Nhiều tiền cũng chỉ để phục vụ đời sống tinh thần.
+    Mo hinh   : Nhiều tiền cũng chỉ để phục vụ đời sống tinh thần.
+
+[75] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nhưng mà bây giờ tôi ở một túc leo tranh nhưng mà tôi cảm thấy hạnh phúc, tôi cảm thấy vui vẻ.
+    Dap an    : Nhưng mà bây giờ tôi ở một túp lều tranh nhưng mà tôi cảm thấy hạnh phúc, tôi cảm thấy vui vẻ.
+    Mo hinh   : Nhưng mà bây giờ tôi ở một túc leo tranh nhưng mà tôi cảm thấy hạnh phúc, tôi cảm biết vui vẻ.
+
+[76] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Vậy là thành công rồi còn hơn là ở trong biệt thư.
+    Dap an    : Vậy là thành công rồi còn hơn là ở trong biệt thự.
+    Mo hinh   : Vậy là thành công rồi còn hơn là ở trong biệt thư.
+
+[77] (asr_real)  ket qua: DUNG
+    ASR goc   : Nhưng mà suốt ngày lo trộm nó đột nhập rồi lo con cái hư hỏng.
+    Dap an    : Nhưng mà suốt ngày lo trộm nó đột nhập rồi lo con cái hư hỏng.
+    Mo hinh   : Nhưng mà suốt ngày lo trộm nó đột nhập rồi lo con cái hư hỏng.
+
+[78] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Người thì lo là sau này chia chắc tài sản như nào cho công bằng đau đầu lắm.
+    Dap an    : Người thì lo là sau này chia chác tài sản như nào cho công bằng đau đầu lắm.
+    Mo hinh   : Người thì lo là sau này chia chắc tài sản như nào cho công bằng đau đầu lắm.
+
+[79] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế nhưng mà có người thì họ lại cho rằng thành công đó là phải cân bằng được cả về đời sống vật chất và tinh thần.
+    Dap an    : Thế nhưng mà có người thì họ lại cho rằng thành công đó là phải cân bằng được cả về đời sống vật chất và tinh thần.
+    Mo hinh   : Thế nhưng mà có người thì họ lại cho rằng thành công đó là phải cân bằng được cả về đời sống vật chất và tinh thần.
+
+[80] (asr_real)  ket qua: DUNG
+    ASR goc   : Vừa phải có tiền nhưng mà lại vừa phải có cái đời sống tinh thần nó thật là thoải mái kìa.
+    Dap an    : Vừa phải có tiền nhưng mà lại vừa phải có cái đời sống tinh thần nó thật là thoải mái kìa.
+    Mo hinh   : Vừa phải có tiền nhưng mà lại vừa phải có cái đời sống tinh thần nó thật là thoải mái kìa.
+
+[81] (asr_real)  ket qua: DUNG
+    ASR goc   : Ê thế nhưng mà có người lại định nghĩa rằng bây giờ là giả sử nhé.
+    Dap an    : Ê thế nhưng mà có người lại định nghĩa rằng bây giờ là giả sử nhé.
+    Mo hinh   : Ê thế nhưng mà có người lại định nghĩa rằng bây giờ là giả sử nhé.
+
+[82] (asr_real)  ket qua: DUNG
+    ASR goc   : Thống nhất được thành công tức là nhiều tiền rồi.
+    Dap an    : Thống nhất được thành công tức là nhiều tiền rồi.
+    Mo hinh   : Thống nhất được thành công tức là nhiều tiền rồi.
+
+[83] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Vậy thì từ hỏi thằng có nguồn lực một nhưng nó phấn đấu lên được năm.
+    Dap an    : Vậy thì thử hỏi thằng có nguồn lực một nhưng nó phấn đấu lên được năm.
+    Mo hinh   : Vậy thì từ hỏi nó có nguồn lực một nhưng nó phấn đấu lên được năm.
+
+[84] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : So với thằng có nguồn lực chín nó phấn đấu lên được 10.
+    Dap an    : So với thằng có nguồn lực chín nó phấn đấu lên được 10.
+    Mo hinh   : So với lũy có nguồn lực chín, nó phấn đấu lên được 10.
+
+[85] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Vậy thì thằng nào mới là thằng thành công.
+    Dap an    : Vậy thì thằng nào mới là thằng thành công.
+    Mo hinh   : Vậy thì đứa nào mới là đứa thành công.
+
+[86] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Ví dụ như kiểu cái việc là ông Đô Nan Trăm ông ấy sinh ra trong một gia đình quý tập.
+    Dap an    : Ví dụ như kiểu cái việc là ông Donald Trump ông ấy sinh ra trong một gia đình quý tộc.
+    Mo hinh   : Ví dụ như kiểu cái việc là ông Đô Nan Trăm ông ấy sinh ra trong một gia đình quý tập.
+
+[87] (asr_real)  ket qua: DUNG
+    ASR goc   : Bây giờ ông ấy trở thành tổng thống Mỹ.
+    Dap an    : Bây giờ ông ấy trở thành tổng thống Mỹ.
+    Mo hinh   : Bây giờ ông ấy trở thành tổng thống Mỹ.
+
+[88] (asr_real)  ket qua: DUNG
+    ASR goc   : So với một người sinh ra trong một gia đình bố mẹ là nông dân.
+    Dap an    : So với một người sinh ra trong một gia đình bố mẹ là nông dân.
+    Mo hinh   : So với một người sinh ra trong một gia đình bố mẹ là nông dân.
+
+[89] (asr_real)  ket qua: DUNG
+    ASR goc   : Bây giờ đang làm chủ tịch tập đoàn.
+    Dap an    : Bây giờ đang làm chủ tịch tập đoàn.
+    Mo hinh   : Bây giờ đang làm chủ tịch tập đoàn.
+
+[90] (asr_real)  ket qua: DUNG
+    ASR goc   : Vậy thì người nào mới là người thành công.
+    Dap an    : Vậy thì người nào mới là người thành công.
+    Mo hinh   : Vậy thì người nào mới là người thành công.
+
+[91] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Ngày từ cái đích nghĩa về thành công của mỗi người nó đã khác nhau bố rồi.
+    Dap an    : Ngay từ cái định nghĩa về thành công của mỗi người nó đã khác nhau rồi.
+    Mo hinh   : Ngày từ cái đích nghĩa về thành công của mỗi người nó đã khác nhau bố rồi.
+
+[92] (asr_real)  ket qua: DUNG
+    ASR goc   : Vậy thì làm gì có cái gọi là công thức để thành công tồn tại trên đời được đâu.
+    Dap an    : Vậy thì làm gì có cái gọi là công thức để thành công tồn tại trên đời được đâu.
+    Mo hinh   : Vậy thì làm gì có cái gọi là công thức để thành công tồn tại trên đời được đâu.
+
+[93] (asr_real)  ket qua: DUNG
+    ASR goc   : Bây giờ bảo là bỏ ra một tí.
+    Dap an    : Bây giờ bảo là bỏ ra một tí.
+    Mo hinh   : Bây giờ bảo là bỏ ra một tí.
+
+[94] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Anh dậy cho mày cách kiếm 500 triệu thì nghe nó còn quân ý.
+    Dap an    : Anh dạy cho mày cách kiếm 500 triệu thì nghe nó còn có lý.
+    Mo hinh   : Anh dậy cho tao cách kiếm 500 triệu thì nghe nó còn quân ý.
+
+[95] (asr_real)  ket qua: DUNG
+    ASR goc   : Chứ còn bây giờ nếu như diễn giả cam kết bỏ ra một tí.
+    Dap an    : Chứ còn bây giờ nếu như diễn giả cam kết bỏ ra một tí.
+    Mo hinh   : Chứ còn bây giờ nếu như diễn giả cam kết bỏ ra một tí.
+
+[96] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Để ông ấy dậy cho công thức thành công thì ở đấy chắc chắn là lùa gà thôi.
+    Dap an    : Để ông ấy dạy cho công thức thành công thì ở đấy chắc chắn là lùa gà thôi.
+    Mo hinh   : Để ông ấy dậy cho công thức thành công thì ở đấy chắc chắn là lùa gà thôi.
+
+[97] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Ngay cả khi hai bên đều có chung một cái đích nghĩa rằng thành công là nhiều tiền.
+    Dap an    : Ngay cả khi hai bên đều có chung một cái định nghĩa rằng thành công là nhiều tiền.
+    Mo hinh   : Ngay cả khi hai bên đều có chung một cái đích nghĩa rằng thành công là nhiều tiền.
+
+[98] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Thì cái việc dậy cho người khác kiếm thật nhiều tiền
+    Dap an    : Thì cái việc dạy cho người khác kiếm thật nhiều tiền
+    Mo hinh   : Thì cái việc dậy cho người khác kiếm thật nhiều tiền.
+
+[99] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : nó cũng không bao giờ có thể tồn tại được
+    Dap an    : nó cũng không bao giờ có thể tồn tại được
+    Mo hinh   : Nó cũng không bao giờ có thể tồn tại được.
+
+[100] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : vì cái thời và cái thế của mỗi người nó hoàn toàn khác nhau.
+    Dap an    : vì cái thời và cái thế của mỗi người nó hoàn toàn khác nhau.
+    Mo hinh   : Vì cái thời và cái thế của mỗi người nó hoàn toàn khác nhau.
+
+[101] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Bình ghét sở gì có thể dầu được.
+    Dap an    : Bill Gates thì có gì có thể giàu được.
+    Mo hinh   : Bình ghét sở gì có thể dầu được.
+
+[102] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Đấy là vì ông ấy sinh ra vào cái thời mà máy tính nó còn sơ khai
+    Dap an    : Đấy là vì ông ấy sinh ra vào cái thời mà máy tính nó còn sơ khai
+    Mo hinh   : Đấy là vì ông ấy sinh ra vào cái thời mà máy tính nó còn sơ khai.
+
+[103] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : và cái thế đứng của ông ấy thì nó là mẹ cái thế đó gọi là toạ sơn hướng thủy rồi.
+    Dap an    : và cái thế đứng của ông ấy thì nó nằm ở cái thế đó gọi là tọa sơn hướng thủy rồi.
+    Mo hinh   : Và cái thế đứng của ông ấy thì nó là mẹ cái thế đó gọi là toạ sơn hướng rồi.
+
+[104] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : Ông bà già của bình ghét là cái dân xưng xỏa về luật và ngân hàng
+    Dap an    : Ông bà già của Bill Gates là cái dân sừng sỏ về luật và ngân hàng
+    Mo hinh   : Ông bà già của Bình Thạnh là cái dân cưng sỏa về luật và ngân hàng.
+
+[105] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : quan hệ của họ cực kỳ rộng nhà của họ bố của dầu luôn rồi rồi.
+    Dap an    : quan hệ của họ cực kỳ rộng, nhà của họ bố của giàu luôn rồi.
+    Mo hinh   : Quan hệ của họ cực kỳ rộng nhà của họ bố của dầu luôn rồi rồi.
+
+[106] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Trong khi đấy ông bình ghét, ông ấy lại còn là cái dạng đầu có điện nữa chứ.
+    Dap an    : Trong khi đấy ông Bill Gates, ông ấy lại còn là cái dạng đầu có sạn nữa chứ.
+    Mo hinh   : Trong khi đấy ông bình ghét, ông ấy lại còn là cái dạng đầu có điện nữa chứ.
+
+[107] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : Đầu của bình ghét cắm sạch cho xe tét la thì lại chạy vòng quanh nước Mỹ cũng được luôn.
+    Dap an    : Đầu của Bill Gates cắm sạc cho xe Tesla thì lại chạy vòng quanh nước Mỹ cũng được luôn.
+    Mo hinh   : Đầu của bình ghét cắm sạch cho xe tét là thì lại chạy vòng quanh nước Mỹ cũng được luôn.
+
+[108] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Vậy thì cái việc ông ấy trở nên dầu quá cũng là điều dễ hiểu thôi mà
+    Dap an    : Vậy thì cái việc ông ấy trở nên giàu quá cũng là điều dễ hiểu thôi mà
+    Mo hinh   : Vậy thì cái việc ông ấy trở nên dầu quá cũng là điều dễ hiểu thôi mà.
+
+[109] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Chứ nếu như bây giờ bảo rằng bình ghét sinh ra vào cái thời bây giờ
+    Dap an    : Chứ nếu như bây giờ bảo rằng Bill Gates sinh ra vào cái thời bây giờ
+    Mo hinh   : Chứ nếu như bây giờ bảo rằng 'bình ghét sinh ra vào cái thời bây giờ'.
+
+[110] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : và cái thời mà A.I. nó đang phát triển như vũ bão này này
+    Dap an    : và cái thời mà A.I. nó đang phát triển như vũ bão này này
+    Mo hinh   : Và cái thời mà A.I. nó đang phát triển như vũ bão này này.
+
+[111] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế ra ngoài ông ấy lại sinh ra trong một cái gia đình có cái thế này.
+    Dap an    : Thế ra ngoài ông ấy lại sinh ra trong một cái gia đình có cái thế này.
+    Mo hinh   : Thế ra ngoài ông ấy lại sinh ra trong một cái gia đình có cái thế này.
+
+[112] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Bố mẹ làm lông rồi chạy ăn từng bữa.
+    Dap an    : Bố mẹ làm nông rồi chạy ăn từng bữa.
+    Mo hinh   : Bố mẹ làm lông rồi chạy ăn từng bữa.
+
+[113] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Vậy thì thì thử khỏi lấy đâu ra mà đòi làm tỷ phú thế giới.
+    Dap an    : Vậy thì thử hỏi lấy đâu ra mà đòi làm tỷ phú thế giới.
+    Mo hinh   : Vậy thì thì thử khỏi lấy đâu ra mà đòi làm tỷ phú thế giới.
+
+[114] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Hôm lên đến được cái chức trưởng phòng thôi đấy là hoài năm rồi.
+    Dap an    : Mơ lên đến được cái chức trưởng phòng thôi đấy là hơn năm rồi.
+    Mo hinh   : Hôm lên đến được cái chức trưởng phòng thôi đấy là hoài năm rồi.
+
+[115] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Chính vì thế nên cái việc đọc tiểu sự của bình ghét để học cách làm dầu
+    Dap an    : Chính vì thế nên cái việc đọc tiểu sự của Bill Gates để học cách làm giàu
+    Mo hinh   : Chính vì thế, nên cái việc đọc tiểu sự của bình ghét để học cách làm dầu.
+
+[116] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : thì nó là một cái điều vô cùng viển vong.
+    Dap an    : thì nó là một cái điều vô cùng viển vong.
+    Mo hinh   : thì nó là một cái điều vô cùng viển vọng.
+
+[117] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nếu có thì chỉ có học được cái ý chí, học được nghĩ lực, học được cái niềm đa mê của ông ấy thôi.
+    Dap an    : Nếu có thì chỉ có học được cái ý chí, học được nghị lực, học được cái niềm đam mê của ông ấy thôi.
+    Mo hinh   : Nếu có thì chỉ có học được cái ý chí, học được nghĩ lực, học Được cái niềm đa mê của ông ấy thôi.
+
+[118] (asr_real, low_confidence)  ket qua: SAI (giu nguyen)
+    ASR goc   : Nhà ông ấy dầu nít khó đổ vách rồi mà ông ấy vẫn kể quốc như châu ông ấy làm ngày làm đêm làm quen ăn quen ngủ.
+    Dap an    : Nhà ông ấy nghèo khó đổ vách rồi mà ông ấy vẫn khổ quốc như châu, ông ấy làm ngày làm đêm, làm quên ăn quên ngủ.
+    Mo hinh   : Nhà ông ấy dầu nít khó đổ vách rồi mà ông ấy vẫn kể quốc như châu ông ấy làm ngày làm đêm làm quen ăn quen ngủ.
+
+[119] (asr_real, low_confidence)  ket qua: GAN DUNG
+    ASR goc   : À trong khi đấy mình đây lương có mời chị ạ nhưng mình suốt ngày đòi chữa nành kia.
+    Dap an    : À trong khi đấy mình đây lương có mười mấy triệu nhưng mình suốt ngày đòi chữa lành kia.
+    Mo hinh   : Áo trong khi đấy mình đây lương có mời chị ạ nhưng mình suốt ngày đòi chữa ngành kia.
+
+[120] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Đấy có cái đấy là đáng học hoài được từ bình ghét thôi.
+    Dap an    : Đấy có cái đấy là đáng học hỏi được từ Bill Gates thôi.
+    Mo hinh   : Đấy có cái đấy là đáng học hoài được từ bình ghét thôi.
+
+[121] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Chứ còn bây giờ đòi gặp bình ghét để xin công thức thành công.
+    Dap an    : Chứ còn bây giờ đòi gặp Bill Gates để xin công thức thành công.
+    Mo hinh   : Chứ còn bây giờ đòi gặp bình ghét để xin công thức thành công.
+
+[122] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Thế mà làm thế nào để được dầu như anh hả bình ghét?
+    Dap an    : Thế mà làm thế nào để được giàu như anh hả Bill Gates?
+    Mo hinh   : Thế mà làm thế nào để được dầu như anh hả bình ghét?
+
+[123] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Ây thì bình ghét, chính bình ghét cũng chịu luôn.
+    Dap an    : Ấy thì Bill Gates, chính Bill Gates cũng chịu luôn.
+    Mo hinh   : Ây thì bình ghét, chính bình ghétt cũng chịu luôn.
+
+[124] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Cái việc đăng ký để học các khóa ngắn hạn như này nó cũng vậy thôi.
+    Dap an    : Cái việc đăng ký để học các khóa ngắn hạn như này nó cũng vậy thôi.
+    Mo hinh   : Cái việc đăng ký để học các ngắn hạn như này nó cũng vậy thôi.
+
+[125] (asr_real)  ket qua: DUNG
+    ASR goc   : Về bản chất nó chẳng có gì xấu cả vì kiến thức nào nó chả có giá trị.
+    Dap an    : Về bản chất nó chẳng có gì xấu cả vì kiến thức nào nó chả có giá trị.
+    Mo hinh   : Về bản chất nó chẳng có gì xấu cả vì kiến thức nào nó chả có giá trị.
+
+[126] (asr_real)  ket qua: DUNG
+    ASR goc   : Thế nhưng có một cái không bao giờ nên học đó chính là học cái công thức để thành công.
+    Dap an    : Thế nhưng có một cái không bao giờ nên học đó chính là học cái công thức để thành công.
+    Mo hinh   : Thế nhưng có một cái không bao giờ nên học đó chính là học cái công thức để thành công.
+
+[127] (asr_real)  ket qua: DUNG
+    ASR goc   : Vì cái công thức đấy nó có tồn tại trên đời đâu, nó còn phải phụ thuộc vào thời thế nữa cơ.
+    Dap an    : Vì cái công thức đấy nó có tồn tại trên đời đâu, nó còn phải phụ thuộc vào thời thế nữa cơ.
+    Mo hinh   : Vì cái công thức đấy nó có tồn tại trên đời đâu, nó còn phải phụ thuộc vào thời thế nữa cơ.
+
+[128] (asr_real)  ket qua: DUNG
+    ASR goc   : Học cái đấy nó chỉ tốn tiền tốn thời gian thôi.
+    Dap an    : Học cái đấy nó chỉ tốn tiền tốn thời gian thôi.
+    Mo hinh   : Học cái đấy nó chỉ tốn tiền tốn thời gian thôi.
+
+[129] (asr_real)  ket qua: GAN DUNG
+    ASR goc   : Nếu mà có công thức ấy thì trên đời này nó chỉ có công thức để không bị vỡ kế hoạch thôi.
+    Dap an    : Nếu mà có công thức ấy thì trên đời này nó chỉ có công thức để không bị vỡ kế hoạch thôi.
+    Mo hinh   : Nếu mà có công thức ấy thì trên đời này nó chỉ có công thứ để không bị vỡ kế hoạch thôi.
+
+[130] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Thế nhưng mà cái công thức đấy thì giá của nó giả nắm.
+    Dap an    : Thế nhưng mà cái công thức đấy thì giá của nó rẻ lắm.
+    Mo hinh   : Thế nhưng mà cái công thức đấy thì giá của nó giả nắm.
+
+[131] (asr_real)  ket qua: DUNG
+    ASR goc   : Có mấy chục nghìn giải quyết được rồi không cần anh em phải mất đến tiền tỉ đâu.
+    Dap an    : Có mấy chục nghìn giải quyết được rồi không cần anh em phải mất đến tiền tỉ đâu.
+    Mo hinh   : Có mấy chục nghìn giải quyết được rồi không cần anh em phải mất đến tiền tỉ đâu.
+
+[132] (asr_real)  ket qua: SAI (giu nguyen)
+    ASR goc   : Anh em chỉ cần ấn vào đường linh phía dưới phần bình luận là thấy luôn.
+    Dap an    : Anh em chỉ cần ấn vào đường link phía dưới phần bình luận là thấy luôn.
+    Mo hinh   : Anh em chỉ cần ấn vào đường linh phía dưới phần bình luận là thấy luôn.
+
+------------------------------------------------------------------------------
+Tong ket: 46 cau dung hoan toan | 56 cau gan dung | 30 cau khong sua duoc
+------------------------------------------------------------------------------
+
+==============================================================================
+HẾT LOG
+==============================================================================

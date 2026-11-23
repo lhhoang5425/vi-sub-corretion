@@ -1,0 +1,59 @@
+{
+  "created_at": "2026-11-21T17:30:18+00:00",
+  "test_file": "data/gold_test/gd1_basic/basic_test_unaccent_all.jsonl",
+  "num_samples": 200,
+  "model_name_or_path": "/content/drive/MyDrive/vi-sub-correction/checkpoints/bmd1905-sub-corrector_lan5_asr_hard_full_ls1",
+  "engine": "seq2seq",
+  "device": "cuda",
+  "decoding": {
+    "num_beams": 5,
+    "repetition_penalty": 1.2,
+    "length_penalty": 1.0,
+    "no_repeat_ngram_size": 3
+  },
+  "batch_size": 16,
+  "results": {
+    "Baseline 1 (Identity)": {
+      "bleu": 3.93,
+      "wer": 88.53,
+      "cer": 28.63,
+      "exact_match": 0.0,
+      "rouge_l": 11.37,
+      "edit_precision": 0.0,
+      "edit_recall": 0.0,
+      "edit_f1": 0.0,
+      "n_sua_dung": 0,
+      "n_sua_nham": 0,
+      "n_bo_sot": 200,
+      "n_giu_dung": 0
+    },
+    "Baseline 2 (Rule & Dictionary)": {
+      "bleu": 3.83,
+      "wer": 87.33,
+      "cer": 27.05,
+      "exact_match": 0.0,
+      "rouge_l": 13.04,
+      "edit_precision": 0.0,
+      "edit_recall": 0.0,
+      "edit_f1": 0.0,
+      "n_sua_dung": 0,
+      "n_sua_nham": 200,
+      "n_bo_sot": 0,
+      "n_giu_dung": 0
+    },
+    "Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1)": {
+      "bleu": 100.0,
+      "wer": 7.93,
+      "cer": 2.45,
+      "exact_match": 35.5,
+      "rouge_l": 91.89,
+      "edit_precision": 35.5,
+      "edit_recall": 100.0,
+      "edit_f1": 52.4,
+      "n_sua_dung": 71,
+      "n_sua_nham": 129,
+      "n_bo_sot": 0,
+      "n_giu_dung": 0
+    }
+  }
+}

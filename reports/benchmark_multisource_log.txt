@@ -1,0 +1,1579 @@
+==============================================================================
+LOG ĐÁNH GIÁ BENCHMARK ĐỀ TÀI NLP-28
+Sửa lỗi & chuẩn hóa phụ đề tiếng Việt từ ASR bằng mô hình Seq2Seq
+==============================================================================
+Thời điểm chạy : 2026-11-21T17:32:19+00:00
+Thiết bị       : GPU/Colab
+Tập kiểm thử   : data/gold_test/gd1_basic/basic_test_multisource.jsonl (300 mẫu)
+Mô hình Seq2Seq: /content/drive/MyDrive/vi-sub-correction/checkpoints/bmd1905-sub-corrector_lan5_asr_hard_full_ls1
+Engine đo được : seq2seq
+Batch size     : 16
+
+==============================================================================
+1. BẢNG TỔNG HỢP CHỈ SỐ ĐỐI ĐẦU
+==============================================================================
+### Bảng kết quả Benchmark định lượng (Tập Test: 300 mẫu)
+
+| Phương pháp | BLEU ↑ | WER (%) ↓ | CER (%) ↓ | Exact Match (%) ↑ | ROUGE-L (%) ↑ | Edit-P (%) ↑ | Edit-R (%) ↑ | Edit-F1 (%) ↑ |
+| :--- |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline 1 (Identity)** | **4.11** | **89.20%** | 28.17% | **0.00%** | 11.14% | 0.00% | 0.00% | **0.00%** |
+| **Baseline 2 (Rule & Dictionary)** | **3.98** | **87.99%** | 26.59% | **0.00%** | 12.72% | 0.00% | 0.00% | **0.00%** |
+| **Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1)** | **100.00** | **16.20%** | 6.28% | **20.67%** | 83.74% | 20.67% | 100.00% | **34.25%** |
+
+*Ghi chú chỉ số:*
+- **BLEU / ROUGE-L ↑**: độ tương đồng với câu chuẩn (BLEU thiên về n-gram khớp hẳn, ROUGE-L thiên về bao phủ).
+- **WER ↓ / CER ↓**: tỷ lệ lệch ở mức từ và mức KÝ TỰ. CER mới thấy được lỗi thiếu dấu thanh,
+  vì WER vẫn đếm một từ sai dấu là đúng 1 từ sai dù chỉ lệch một ký tự.
+- **Exact Match ↑**: tỷ lệ câu trùng 100% đáp án chuẩn. Con số dễ đọc nhất cho hội đồng.
+- **Edit-P ↑**: trong các câu mô hình đụng vào sửa, bao nhiêu % sửa đúng đích (càng thấp càng over-correct).
+- **Edit-R ↑**: bao nhiêu % câu cần sửa thì được can thiệp (100% = không bỏ sót câu nào).
+- **Edit-F1 ↑**: trung bình điều hòa của Edit-P và Edit-R.
+
+==============================================================================
+2. HIỆU NĂNG TÁCH THEO LOẠI LỖI
+==============================================================================
+
+### Bảng hiệu năng theo loại lỗi (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+
+| Loại lỗi | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| khong_quy_nhan | 300 | 20.67 | 6.28 | 100.00 | 34.25 |
+
+*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*
+*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*
+
+==============================================================================
+2b. HIỆU NĂNG TÁCH THEO NGUỒN DỮ LIỆU
+==============================================================================
+
+### Bảng hiệu năng theo nguồn dữ liệu (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+
+| Nguồn | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| shynbui | 150 | 36.67 | 2.59 | 100.00 | 53.66 |
+| wikipedia | 150 | 4.67 | 9.89 | 83.77 | 8.92 |
+
+*Chênh lệch lớn giữa các nguồn nghĩa là mô hình chưa tổng quát hoá,*
+*mà chỉ khớp văn phong của nguồn chiếm đa số trong tập train.*
+
+==============================================================================
+3. CHI TIẾT SỐ CÂU THUỘC TỪNG NHÓM SỬA LỖI
+==============================================================================
+  Baseline 1 (Identity)              sua dung   0 | sua nham   0 | bo sot 300 | giu dung   0
+  Baseline 2 (Rule & Dictionary)     sua dung   0 | sua nham 300 | bo sot   0 | giu dung   0
+  Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1) sua dung  62 | sua nham 238 | bo sot   0 | giu dung   0
+
+  ('sua nham' gom ca over-correction: câu vốn đúng bị sửa tới.)
+
+
+==============================================================================
+PHÂN TÍCH TỪNG CÂU (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+==============================================================================
+
+[1] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tom luoc bao cao lien quan den hoat dong cua ban thanh tra nhan dan
+    Dap an    : Tóm lược báo cáo liên quan đến hoạt động của Ban Thanh tra Nhân dân.
+    Mo hinh   : Tóm lược báo cáo liên quan đến hoạt động của Ban Thanh tra Nhân dân.
+
+[2] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong buoi le tot nghiep dot 2 vua qua bui van tinh da duoc trao danh hieu tan thu khoa nganh cong nghe thong tin
+    Dap an    : Trong buổi lễ tốt nghiệp đợt 2 vừa qua, Bùi Văn Tình đã được trao danh hiệu Tân Thủ khoa ngành Công nghệ Thông tin.
+    Mo hinh   : Trong buổi lễ tốt nghiệp đợt 2 vừa qua, Bùi Văn Tình đã được trao danh hiệu tân thủ khoa ngành Công nghệ Thông tin.
+
+[3] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : de dat duoc nhung ket qua hoc tap dang ke
+    Dap an    : Để đạt được những kết quả học tập đáng kể.
+    Mo hinh   : Để đạt được những kết quả học tập đáng kể.
+
+[4] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ts nguyen minh tam da phat di mot loi nhan
+    Dap an    : TS Nguyễn Minh Tâm đã phát đi một lời nhắn.
+    Mo hinh   : TS. Nguyễn Minh Tâm đã phát đi một lời nhắn.
+
+[5] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tran vinh khanh la nguoi nhan cup bac con cup dong duoc trao cho ha van hoang
+    Dap an    : Trần Vinh Khánh là người nhận Cúp Bạc, còn Cúp Đồng được trao cho Hà Văn Hoàng.
+    Mo hinh   : Trần Vinh Khánh là người nhận cúp bạc, còn cúp đồng được trao cho Hà Văn Hoàng.
+
+[6] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : day la quyet dinh dung dan cho su phat trien ca nhan va su dong gop tich cuc vao an ninh thong tin cua xa hoi bich phuong da tim kiem nhieu nguon thong tin
+    Dap an    : Đây là quyết định đúng đắn cho sự phát triển cá nhân và sự đóng góp tích cực vào an ninh thông tin của xã hội. Bích Phượng đã tìm kiếm nhiều nguồn thông tin.
+    Mo hinh   : Đây là quyết định đúng đắn cho sự phát triển cá nhân và sự đóng góp tích cực vào an ninh thông tin của xã hội. Bích Phương đã tìm kiếm nhiều nguồn thông tin.
+
+[7] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bich phuong da co duoc nhieu kinh nghiem thuc tien sau khi ra truong
+    Dap an    : Bích Phượng đã có được nhiều kinh nghiệm thực tiễn sau khi ra trường.
+    Mo hinh   : Bích Phương đã có được nhiều kinh nghiệm thực tiễn sau khi ra trường.
+
+[8] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tai kist so luong nghien cuu sinh viet nam hien nay la 30 nguoi
+    Dap an    : Tại KIST, số lượng nghiên cứu sinh Việt Nam hiện nay là 30 người.
+    Mo hinh   : Tại KIST, số lượng nghiên cứu sinh Việt Nam hiện nay là 30 người.
+
+[9] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban da thuc hien nhieu phuong phap hoc tu viec ap dung ky thuat pomodoro chia cong viec thanh cac khoang thoi gian giong nhau den viec ve so do tu duy va doc tai lieu truoc khi vao lop
+    Dap an    : Bạn đã thực hiện nhiều phương pháp học, từ việc áp dụng kỹ thuật pomodoro (chia công việc thành các khoảng thời gian giống nhau) đến việc vẽ sơ đồ tư duy và đọc tài liệu trước khi vào lớp.
+    Mo hinh   : Bạn đã thực hiện nhiều phương pháp học từ việc áp dụng kỹ thuật Algodoro, chia công việc thành các khoảng thời gian giống nhau đến việc vẽ sơ đồ tư duy và đọc tài liệu trước khi vào lớp.
+
+[10] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giam doc dhqghcm nhan xet rang chuong trinh sinh vien 5 tot la mot minh hoa dien hinh cho su menh cua dhqghcm trong cong tac dao tao va phat trien nhan tai huong toi su hoan thien cua con nguoi
+    Dap an    : Giám đốc ĐHQG-HCM nhận xét rằng chương trình Sinh viên 5 tốt là một minh họa điển hình cho sứ mệnh của ĐHQG-HCM trong công tác đào tạo và phát triển nhân tài, hướng tới sự hoàn thiện của con người.
+    Mo hinh   : Giám đốc ĐHQG-HCM nhận xét rằng chương trình 'Sinh viên 5 tốt' là một minh điển hình cho sứ mệnh của ĐHQg-HCM trong công tác đào tạo và phát triển nhân tài, hướng tới sự hoàn thiện của con người.
+
+[11] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : {sentence pgs ts vu hai quan cho hay rang chuong trinh giai thuong eureka dang phat trien khong ngung trong khi dat nuoc dang dung truoc nhung kho khan va co hoi cung nhu thach thuc }
+    Dap an    : {'Sentence': 'PGS. TS Vũ Hải Quân cho hay rằng chương trình Giải thưởng Euréka đang phát triển không ngừng, trong khi đất nước đang đứng trước những khó khăn và cơ hội cũng như thách thức. '}
+    Mo hinh   : {'Sentence': 'PGS. TS Vũ Hải Quân cho hay rằng chương trình giải thưởng Eureka đang phát triển không ngừng, trong khi đất nước đang đứng trước những khó khăn và cơ hội cũng như thách thức. '}
+
+[12] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lan nay 02 ca nhan tre da co thanh tich noi bat trong so can bo
+    Dap an    : Lần này, 02 cá nhân trẻ đã có thành tích nổi bật trong số cán bộ.
+    Mo hinh   : Lần này, 02 cá nhân trẻ đã có thành tích nổi bật trong số cán bộ.
+
+[13] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cu nguoi tham gia dao tao trong va ngoai nuoc tang cuong thu nhap cho nguoi lao dong
+    Dap an    : Cử người tham gia đào tạo trong và ngoài nước, tăng cường thu nhập cho người lao động.
+    Mo hinh   : Cử người tham gia đào tạo trong và ngoài nước; tăng cường thu nhập cho người lao động
+
+[14] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truong se to chuc mot trai he mang ten uit algo bootcamp 2023 cho cac hoc sinh dat giai trong cac ky thi quoc gia
+    Dap an    : Trường sẽ tổ chức một trại hè mang tên 'UIT ALGO BOOTCAMP 2023' cho các học sinh đạt giải trong các kỳ thi quốc gia.
+    Mo hinh   : Trường sẽ tổ chức một trại hè mang tên UIT Algo Bootcamp 2023 cho các học sinh đạt giải trong các kỳ thi quốc gia.
+
+[15] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : kns love_is_pain co ke hoach dung o vi tri cao nhat trong ky thi sap toi sang ngay 06122023 tai truong dai hoc khoa hoc
+    Dap an    : KNS. Love_is_pain có kế hoạch đứng ở vị trí cao nhất trong kỳ thi sắp tới. Sáng ngày 06/12/2023 tại Trường Đại học Khoa học.
+    Mo hinh   : KMS Lovelines Residence có kế hoạch đứng ở vị trí cao nhất trong kỳ thi sắp tới, sáng ngày 06/12/2023, tại Trường Đại học Khoa học.
+
+[16] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ha van hoang va phan truong tri la mot phan cua doi uit
+    Dap an    : Hà Văn Hoàng và Phan Trường Trí là một phần của Đội UIT.
+    Mo hinh   : Hà Văn Hoàng và Phan Trường Trí là một phần của đội UIT.
+
+[17] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thieu kien thuc ve it la mot nguyen nhan va khong co nhieu su khuyen khich tu xung quanh cung la mot ly do
+    Dap an    : Thiếu kiến thức về IT là một nguyên nhân, và không có nhiều sự khuyến khích từ xung quanh cũng là một lý do.
+    Mo hinh   : Thiếu kiến thức về IT là một nguyên nhân và không có nhiều sự khuyến khích từ xung quanh cũng là một lý do.
+
+[18] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : su cham chi cua ban se thu hut thanh cong
+    Dap an    : Sự chăm chỉ của bạn sẽ thu hút thành công.
+    Mo hinh   : Sự chăm chỉ của bạn sẽ thu hút thành công.
+
+[19] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban se co co hoi hoc tap va trai nghiem trong mot moi truong tuyet voi tai uit
+    Dap an    : Bạn sẽ có cơ hội học tập và trải nghiệm trong một môi trường tuyệt vời tại UIT.
+    Mo hinh   : Bạn sẽ có cơ hội học tập và trải nghiệm trong một môi trường tuyệt vời tại UIT.
+
+[20] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : kien thuc nen tang duoc thay co giang day trong truong hoc
+    Dap an    : Kiến thức nền tảng được thầy cô giảng dạy trong trường học.
+    Mo hinh   : Kiến thức nền tảng được thầy cô giảng dạy trong trường học.
+
+[21] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : khi ban tham gia ho tro cong viec trong khoa ban se truc tiep hop tac voi cac thay co de tang cuong tinh can than
+    Dap an    : Khi bạn tham gia hỗ trợ công việc trong Khoa, bạn sẽ trực tiếp hợp tác với các thầy cô để tăng cường tính cẩn thận.
+    Mo hinh   : Khi bạn tham gia hỗ trợ công việc trong Khoa, bạn sẽ trực tiếp hợp tác với các thầy cô để tăng cường tính cẩn thận.
+
+[22] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm on the topic of training size
+    Dap an    : HCM; on the topic of training size.
+    Mo hinh   : HCM. On the topic of 'Training cỡ'.
+
+[23] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoat dong cua uit lien quan den nghien cuu va chuyen giao cong nghe
+    Dap an    : Hoạt động của UIT liên quan đến nghiên cứu và chuyển giao công nghệ.
+    Mo hinh   : Hoạt động của UIT liên quan đến nghiên cứu và chuyển giao công nghệ.
+
+[24] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong phien bao cao chinh tai hoi thao triet duoc ban to chuc moi de trinh bay giai phap cua minh
+    Dap an    : Trong phiên báo cáo chính tại hội thảo, Triết được Ban Tổ Chức mời để trình bày giải pháp của mình.
+    Mo hinh   : Trong phiên báo cáo chính tại hội thảo, Triết được ban tổ chức mời để trình bày giải pháp của mình.
+
+[25] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : suc khoe tinh than va cuoc song sinh vien thong tin hinh anh le hoai dhqghcm chi tiet co the xem tai truong dai hoc cong nghe thong tin la mot co so dao tao dai hoc
+    Dap an    : Sức khỏe tinh thần và cuộc sống sinh viên. Thông tin, hình ảnh: Lê Hoài - ĐHQG-HCM. Chi tiết có thể xem tại: Trường Đại học Công nghệ Thông tin là một cơ sở đào tạo đại học.
+    Mo hinh   : Sức tinh thần và cuộc sống sinh viên. Thông tin hình ảnh Lê Hoài, ĐHQG-HCM. Chi tiết có thể xem tại: Trường Đại học Công nghệ Thông tin là một cơ sở đào tạo đại học.
+
+[26] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mot so van de bao gom chien luoc khoi nghiep cho hoc sinh da duoc trao doi giua cac bao cao vien va cu toa
+    Dap an    : Một số vấn đề, bao gồm chiến lược khởi nghiệp cho học sinh, đã được trao đổi giữa các báo cáo viên và cử tọa.
+    Mo hinh   : Một số vấn đề, bao gồm chiến lược khởi nghiệp cho học sinh, đã được trao đổi giữa các báo cáo viên và cư.
+
+[27] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ve thiet ke vi mach ban co kien thuc chuyen sau lap trinh may tinh
+    Dap an    : Về thiết kế vi mạch, bạn có kiến thức chuyên sâu; Lập trình, Máy tính.
+    Mo hinh   : Về thiết kế vi mạch, bạn có kiến thức chuyên sâu lập trình máy tính.
+
+[28] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nganh khoa hoc may tinh va ky thuat phan mem hien co 323 sinh vien
+    Dap an    : Ngành Khoa học Máy tính và Kỹ thuật Phần mềm hiện có 323 sinh viên.
+    Mo hinh   : Ngành Khoa học máy tính và Kỹ thuật phần mềm hiện có 323 sinh viên.
+
+[29] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : huong giang cho hay rang gan nhu tat ca cac tai lieu hoc thuat co da doc deu la tieng anh va tai lieu cung khong phong phu
+    Dap an    : Hương Giang cho hay rằng gần như tất cả các tài liệu học thuật cô đã đọc đều là tiếng Anh, và tài liệu cũng không phong phú.
+    Mo hinh   : Hương Giang cho hay rằng gần như tất cả các tài liệu học thuật cô đã đọc đều là tiếng Anh, và tài liệu cũng không phong phú.
+
+[30] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyen trong chinh hom nay nhan bang tien si tu dhqghcm dieu nay chung to su kien tri va long say me khoa hoc da giup em vuot qua nhung kho khan de tro thanh mot nha khoa hoc
+    Dap an    : Nguyễn Trọng Chỉnh hôm nay nhận bằng Tiến sĩ từ ĐHQG-HCM, điều này chứng tỏ sự kiên trì và lòng say mê khoa học đã giúp em vượt qua những khó khăn để trở thành một nhà khoa học.
+    Mo hinh   : Nguyễn Trọng Chính hôm nay nhận bằng Tiến sĩ từ ĐHQG-HCM, điều này chứng tỏ sự kiên trì và lòng say mê khoa học đã giúp em vượt qua những khó khăn để trở thành một nhà khoa học.
+
+[31] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoc sinh dau tien cua chuong trinh giao duc pho thong moi se hoan thanh tot nghiep thpt
+    Dap an    : Học sinh đầu tiên của Chương trình giáo dục phổ thông mới sẽ hoàn thành tốt nghiệp THPT.
+    Mo hinh   : Học sinh đầu tiên của chương trình giáo dục phổ thông mới sẽ hoàn thành tốt nghiệp THPT.
+
+[32] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : den nam 2023 tong so truong dai hoc la 97
+    Dap an    : Đến năm 2023, tổng số trường đại học là 97.
+    Mo hinh   : Đến năm 2023, tổng số trường đại học là 97.
+
+[33] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gom co bao cao so ket 3 nam thuc hien de an vnu 100 giai doan 20212025 ts nguyen quoc chinh giam doc trung tam khao thi va danh gia chat luong dao tao dhqghcm
+    Dap an    : Gồm có: Báo cáo sơ kết 3 năm thực hiện Đề án VNU 100 giai đoạn 2021-2025 (TS Nguyễn Quốc Chính - Giám đốc Trung tâm Khảo thí và Đánh giá Chất lượng Đào tạo ĐHQG-HCM);
+    Mo hinh   : Gồm có: Báo cáo số kết 3 năm thực hiện Đề án VNU 100 giai đoạn 2021-2025; TS Nguyễn Quốc Chính - Giám đốc Trung tâm Khảo thí và Đánh giá chất lượng đào tạo ĐHQG-HCM.
+
+[34] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : trong so 4 linh vuc mui nhon ky thuat co khi va co ky thuat bao gom may tinh va cong nghe thong tin cung voi kinh doanh va quan ly
+    Dap an    : Trong số 4 lĩnh vực mũi nhọn, kỹ thuật cơ khí và cơ kỹ thuật bao gồm máy tính và công nghệ thông tin, cùng với kinh doanh và quản lý.
+    Mo hinh   : Trong số 4 lĩnh vực mũi nhọn, kỹ thuật cơ khí và cơ kỹ thuật bao gồm máy tính và công nghệ thông tin, cùng với kinh doanh và quản lý.
+
+[35] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chuyen vien phong bao dam chat luong giao duc & khao thi ong nguyen duc hung goi y rang dhqghcm nen co chinh sach hoc bong rieng cho sinh vien quoc te
+    Dap an    : Chuyên viên Phòng Bảo đảm Chất lượng Giáo dục & Khảo thí, ông Nguyễn Đức Hùng, gợi ý rằng ĐHQG-HCM nên có chính sách học bổng riêng cho sinh viên quốc tế.
+    Mo hinh   : Chuyên viên Phòng Bảo đảm chất lượng giáo dục & Khảo thí, ông Nguyễn Đức Hùng, gợi ý rằng ĐHQG-HCM nên có chính sách học bổng riêng cho sinh viên quốc tế.
+
+[36] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : prof dr ulrich frank who holds the chair of information systems and enterprise modelling is at technische university braunschweig germany
+    Dap an    : Prof. Dr. Ulrich Frank, who holds the Chair of Information Systems and Enterprise Modelling, is at Technische University Braunschweig, Germany.
+    Mo hinh   : Prof. Dr. Ulrich Frank, who holds the chair of Information Systems and enterprise Modelling, is at Technische University braun-Schlaig (Germany).
+
+[37] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dung la khi ta co tinh yeu manh liet voi mot dieu gi do ta se tim ra cach de chung minh rang nhung thu ta yeu dep den bat ngo khong can phai den nhung dia diem xa xoi de ghi lai khoanh khac
+    Dap an    : Đúng là khi ta có tình yêu mãnh liệt với một điều gì đó, ta sẽ tìm ra cách để chứng minh rằng những thứ ta yêu đẹp đến bất ngờ. Không cần phải đến những địa điểm xa xôi để ghi lại khoảnh khắc.
+    Mo hinh   : Đúng là khi ta có tình yêu mãnh liệt với một điều gì đó, ta sẽ tìm ra cách để chứng minh rằng những thứ ta yêu đẹp đến bất ngờ, không cần phải đến những địa điểm xa xôi để ghi lại khoảnh khắc.
+
+[38] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : van de lon nhat ma truong phai giai quyet la phan bo thoi gian sao cho hop ly de hoan thanh muc tieu da de ra nam sinh 2k1 tam su “khi thuc hien bai nghien cuu vao thoi diem nay
+    Dap an    : Vấn đề lớn nhất mà Trường phải giải quyết là phân bổ thời gian sao cho hợp lý để hoàn thành mục tiêu đã đề ra. Nam sinh 2k1 tâm sự: “Khi thực hiện bài nghiên cứu vào thời điểm này.
+    Mo hinh   : Vấn đề lớn nhất mà Trường phải giải quyết là phân bổ thời gian sao cho hợp lý để hoàn thành mục tiêu đã đề ra. Nam sinh 2k1 tâm sự: “Khi thực hiện bài nghiên cứu vào thời điểm này.
+
+[39] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban can phai huan luyen mo hinh lien tuc trong 2 3 ngay de co duoc ket qua tot nhat cho du an do nhieu mon hoc yeu cau
+    Dap an    : Bạn cần phải huấn luyện mô hình liên tục trong 2 - 3 ngày để có được kết quả tốt nhất cho dự án, do nhiều môn học yêu cầu.
+    Mo hinh   : Bạn cần phải huấn luyện mô hình liên tục trong 2, 3 ngày để có được kết quả tốt nhất cho dự án, do nhiều môn học yêu cầu.
+
+[40] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec theo hoc thac si tai uit la dieu toi san long lam vi toi tin rang do se mang lai trai nghiem tuyet voi
+    Dap an    : Việc theo học thạc sĩ tại UIT là điều tôi sẵn lòng làm vì tôi tin rằng đó sẽ mang lại trải nghiệm tuyệt vời.
+    Mo hinh   : Việc theo học thạc sĩ tại UIT là điều tôi sẵn lòng làm, vì tôi tin rằng đó sẽ mang lại trải nghiệm tuyệt vời.
+
+[41] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vinh danh quy thay co da cong hien thoi gian cho su nghiep giao duc mot can bo nhan ky niem chuong vi su nghiep to chuc nha nuoc
+    Dap an    : Vinh danh quý Thầy, Cô đã cống hiến thời gian cho sự nghiệp giáo dục, một cán bộ nhận kỷ niệm chương Vì sự nghiệp tổ chức Nhà nước.
+    Mo hinh   : Vinh danh Quý Thầy Cô đã cống hiến thời gian cho sự nghiệp giáo dục, một cán bộ nhận kỷ niệm chương vì sự nghiệp tổ chức Nhà nước.
+
+[42] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : bo kh&cn va bo tai chinh
+    Dap an    : Bộ KH&CN và Bộ Tài chính.
+    Mo hinh   : Bộ KH&CN và Bộ Tài chính.
+
+[43] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nam nay dhqghcm duoc cap kinh phi tren 200 ty nhung so tien duoc phe duyet chi khoang 140 ty khong du cho cac nha khoa hoc tien hanh nghien cuu
+    Dap an    : Năm nay, ĐHQG-HCM được cấp kinh phí trên 200 tỷ, nhưng số tiền được phê duyệt chỉ khoảng 140 tỷ, không đủ cho các nhà khoa học tiến hành nghiên cứu.
+    Mo hinh   : Năm nay, ĐHQG-HCM được cấp kinh phí trên 200 tỷ, nhưng số tiền được phê duyệt chỉ khoảng 140 tỷ, không đủ cho các nhà khoa học tiến hành nghiên cứu.
+
+[44] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac hoat dong phu hop voi co che thi truong theo dinh huong xhcn cua viet nam
+    Dap an    : Các hoạt động phù hợp với cơ chế thị trường theo định hướng XHCN của Việt Nam.
+    Mo hinh   : Các hoạt động phù hợp với cơ chế thị trường theo định hướng SHCN của Việt Nam.
+
+[45] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : co gang phat trien ban than qua viec hoc
+    Dap an    : Cố gắng phát triển bản thân qua việc học.
+    Mo hinh   : Cố gắng phát triển bản thân qua việc học.
+
+[46] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cu the la trong viec giao viec
+    Dap an    : Cụ thể là trong việc giao việc.
+    Mo hinh   : Cụ thể là trong việc giao việc.
+
+[47] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : asiin la mot to chuc co uy tin trong he thong hiep hoi kiem dinh chat luong dai hoc chau au thuc hien cac hoat dong danh gia
+    Dap an    : ASIIN là một tổ chức có uy tín trong hệ thống Hiệp hội kiểm định chất lượng đại học châu Âu, thực hiện các hoạt động đánh giá.
+    Mo hinh   : ASIIN là một tổ chức có uy tín trong hệ thống Hiệp hội kiểm định chất lượng đại học châu Âu, thực hiện các hoạt động đánh giá.
+
+[48] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : chia se ve kinh nghiem thuc hien phuong phap kiem tra va danh gia cdr ctdt tai khoa ky thuat may tinh
+    Dap an    : Chia sẻ về kinh nghiệm thực hiện phương pháp kiểm tra và đánh giá CĐR CTĐT tại khoa Kỹ thuật Máy tính.
+    Mo hinh   : Chia sẻ về kinh nghiệm thực hiện phương pháp kiểm tra và đánh giá CĐR CTĐT tại khoa Kỹ thuật Máy tính.
+
+[49] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo thong tin nhung nguoi ban xung quanh khanh quynh cung dang gap phai kho khan trong van de nay
+    Dap an    : Theo thông tin, những người bạn xung quanh Khánh Quỳnh cũng đang gặp phải khó khăn trong vấn đề này.
+    Mo hinh   : Theo thông tin, những người bạn xung quanh Khánh Quỳnh cũng đang gặp phải khó khăn trong vấn đề này.
+
+[50] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tu duy lap trinh la dieu can thiet cho nguoi hoc trong linh vuc cong nghe thong tin dac biet la khi ap dung tu duy he thong va phan tich
+    Dap an    : Tư duy lập trình là điều cần thiết cho người học trong lĩnh vực công nghệ thông tin, đặc biệt là khi áp dụng tư duy hệ thống và phân tích.
+    Mo hinh   : Tư duy lập trình là điều cần thiết cho người học trong lĩnh vực công nghệ thông tin, đặc biệt là khi áp dụng tư duy hệ thống và phân tích.
+
+[51] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : doanh nghiep theo pgs ts vu hai quan da duoc trien khai trong 4 nam
+    Dap an    : Doanh nghiệp, theo PGS. TS Vũ Hải Quân, đã được triển khai trong 4 năm.
+    Mo hinh   : Doanh nghiệp, theo PGS. TS Vũ Hải Quân, đã được triển khai trong 4 năm.
+
+[52] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lien ket bai viet dung truong dai hoc cong nghe thong tin la mot trung tam dao tao dai hoc va sau dai hoc voi nguon nhan luc chat luong cao
+    Dap an    : Liên kết bài viết: dung: - Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học và sau đại học, với nguồn nhân lực chất lượng cao.
+    Mo hinh   : Liên kết bài viết: dung: - Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học và sau đại học, với nguồn nhân lực chất lượng cao.
+
+[53] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : toi khuyen cac ban rang hay don nhan sai lam vi chi khi co sai sot ban moi nhan ra dieu can lam va hay luon hoi
+    Dap an    : Tôi khuyên các bạn rằng 'hãy đón nhận sai lầm', vì chỉ khi có sai sót, bạn mới nhận ra điều cần làm và 'hãy luôn hỏi'.
+    Mo hinh   : Tôi khuyên các bạn rằng hãy đón nhận sai lầm, vì chỉ khi có sai sót, bạn mới nhận ra điều cần làm và hãy luôn hỏi.
+
+[54] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dhqghcm va cac doanh nghiep hoa ky da co cuoc thao luan ve tiem nang hop tac trong tuong lai trong linh vuc ky thuat y sinh
+    Dap an    : ĐHQG-HCM và các doanh nghiệp Hoa Kỳ đã có cuộc thảo luận về tiềm năng hợp tác trong tương lai trong lĩnh vực kỹ thuật y sinh.
+    Mo hinh   : ĐHQG-HCM và các doanh nghiệp Hoa Kỳ đã có cuộc thảo luận về tiềm năng hợp tác trong tương lai trong lĩnh vực kỹ thuật y sinh.
+
+[55] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phien trong the dai hoi dien ra vao sang ngay 05112023 da thanh cong tot dep trong nhiem ky 2023 – 2028
+    Dap an    : Phiên trọng thể Đại hội diễn ra vào sáng ngày 05/11/2023 đã thành công tốt đẹp trong nhiệm kỳ 2023 – 2028.
+    Mo hinh   : Phiên trọng thể Đại hội diễn ra vào sáng ngày 05/11/2023, đã thành công tốt đẹp trong nhiệm kỳ 2023 – 2028.
+
+[56] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm khoa hoc nay la cau noi cho sinh vien den gan hon voi kien thuc thuc te ve it va scrum mo ra co hoi nghe nghiep tai cac doanh nghiep trong va ngoai nuoc
+    Dap an    : HCM. Khóa học này là cầu nối cho sinh viên đến gần hơn với kiến thức thực tế về IT và Scrum, mở ra cơ hội nghề nghiệp tại các doanh nghiệp trong và ngoài nước.
+    Mo hinh   : HCM. học này là cầu nối cho sinh viên đến gần hơn với kiến thức thực tế về IT và SCRUM, mở ra cơ hội nghề nghiệp tại các doanh nghiệp trong và ngoài nước.
+
+[57] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vao ngay 511 truong dai hoc cong nghe thong tin dhqghcm voi doi uit nth holy grail da xuat sac gianh giai nhi tai cuoc thi lap trinh quoc te icpc vietnam2023
+    Dap an    : Vào ngày 5/11, Trường Đại học Công nghệ Thông tin ĐHQG-HCM với đội UIT. NTH. Holy. Grail đã xuất sắc giành giải Nhì tại Cuộc thi lập trình quốc tế ICPC Vietnam-2023.
+    Mo hinh   : Vào ngày 5/11, Trường Đại học Công nghệ Thông tin ĐHQG-HCM với đội UIT. NTH Holy Grail đã xuất sắc giành giải Nhì tại cuộc thi lập trình quốc tế ICPC Vietnam2023.
+
+[58] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chinh tac gia vo tran dai 19521308 khdl 2019
+    Dap an    : Chính tác giả: Võ Trần Đại - 19521308 - KHDL 2019.
+    Mo hinh   : Chính tác giả Võ Trần Đại, 19521308, KHDL 2019
+
+[59] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi thao dien dan hang nam cho nhung nguoi nghien cuu co su tham gia phoi hop cua cau lac bo cac khoatruongvien cntttt viet nam fisu
+    Dap an    : Hội thảo, diễn đàn hàng năm cho những người nghiên cứu, có sự tham gia phối hợp của Câu lạc bộ các Khoa-Trường-Viện CNTT-TT Việt Nam (FISU).
+    Mo hinh   : Hội thảo diễn đàn hàng năm cho những người nghiên cứu có sự tham gia phối hợp của Câu lạc bộ các Khoa/Trường/Viện CNTT Việt Nam (FUS).
+
+[60] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban to chuc da cong bo cac de bai theo thu tu
+    Dap an    : Ban tổ chức đã công bố các đề bài theo thứ tự.
+    Mo hinh   : Ban Tổ chức đã công bố các đề bài theo thứ tự.
+
+[61] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyen vinh khanh voi me la giao vien day tin hoc da the hien dam me voi tin hoc tu khi con nho
+    Dap an    : Nguyễn Vinh Khánh, với mẹ là giáo viên dạy Tin học, đã thể hiện đam mê với tin học từ khi còn nhỏ.
+    Mo hinh   : Nguyễn Vinh Khánh, với mẹ là giáo viên dạy tin học, đã thể hiện đam mê với tin học từ khi còn nhỏ.
+
+[62] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : mot niem vinh du lon dong thoi cung la mot trach nhiem nang ne
+    Dap an    : Một niềm vinh dự lớn, đồng thời cũng là một trách nhiệm nặng nề.
+    Mo hinh   : Một niềm vinh dự lớn, đồng thời cũng là một trách nhiệm nặng nề.
+
+[63] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cap do tien tien cho khoang 1
+    Dap an    : Cấp độ tiên tiến cho khoảng 1.
+    Mo hinh   : Cấp độ tiên tiến cho khoảng 1.
+
+[64] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bo truong nguyen chi dung thuoc bo ke hoach va dau tu da tham gia tham gian hang trien lam cua dhqghcm cung voi cac dai bieu quoc te va trong nuoc
+    Dap an    : Bộ trưởng Nguyễn Chí Dũng thuộc Bộ Kế hoạch và Đầu tư đã tham gia thăm gian hàng triển lãm của ĐHQG-HCM cùng với các đại biểu quốc tế và trong nước.
+    Mo hinh   : Bộ trưởng Nguyễn Chí Dũng, thuộc Bộ Kế hoạch và Đầu tư, đã tham gia thăm gian hàng triển lãm của ĐHQG-HCM cùng với các đại biểu quốc tế và trong nước.
+
+[65] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoi tu gan 300 doanh nghiep cong nghe hang dau tu ca nuoc va the gioi
+    Dap an    : Hội tụ gần 300 doanh nghiệp công nghệ hàng đầu từ cả nước và thế giới.
+    Mo hinh   : Hội tụ gần 300 doanh nghiệp công nghệ hàng đầu từ cả nước và thế giới.
+
+[66] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau 34 nam hoat dong chung toi da tap trung vao linh vuc giao duc va phat trien cong dong o viet nam va mong co
+    Dap an    : Sau 34 năm hoạt động, chúng tôi đã tập trung vào lĩnh vực giáo dục và phát triển cộng đồng ở Việt Nam và Mông Cổ.
+    Mo hinh   : Sau 34 năm hoạt động, chúng tôi đã tập trung vào lĩnh vực giáo dục và phát triển cộng đồng ở Việt Nam và mong có.
+
+[67] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban da nhan duoc su ho tro tu uit nhu the nao trong qua trinh hoc tap va nghien cuu bai bao nay duoc phat trien tu mot y tuong cua mon do an khoa hoc du lieu
+    Dap an    : Bạn đã nhận được sự hỗ trợ từ UIT như thế nào trong quá trình học tập và nghiên cứu? Bài báo này được phát triển từ một ý tưởng của môn Đồ án Khoa học Dữ liệu.
+    Mo hinh   : Bạn đã nhận được sự hỗ trợ từ UIT như thế nào trong quá trình học tập và nghiên cứu? Bài báo này được phát triển từ một ý tưởng của môn Đồ án Khoa học Dữ liệu.
+
+[68] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo phien an dhqghcm truong dai hoc cong nghe thong tin la noi cung cap nguon nhan luc chat luong cao thong qua dao tao dai hoc va sau dai hoc thong tin chi tiet co the xem tai day
+    Dap an    : Theo Phiên An - ĐHQG-HCM, Trường Đại học Công nghệ Thông tin là nơi cung cấp nguồn nhân lực chất lượng cao thông qua đào tạo đại học và sau đại học. Thông tin chi tiết có thể xem tại đây.
+    Mo hinh   : Theo Phiên An - ĐHQG-HCM, Trường Đại học Công nghệ Thông tin là nơi cung cấp nguồn nhân lực chất lượng cao thông qua đào tạo đại học và sau đại học. Thông tin chi tiết có thể xem tại đây.
+
+[69] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trinh bay thong tin ve du an nghien cuu cac giai phap idps thao luan ve muc dich cua chuong trinh hop tac nghien cuu khoa hoc giua uit va bosch
+    Dap an    : Trình bày thông tin về dự án nghiên cứu các giải pháp IDPS; thảo luận về mục đích của chương trình hợp tác nghiên cứu khoa học giữa UIT và Bosch.
+    Mo hinh   : Trình bày thông tin về dự án nghiên cứu: Các giải pháp IDC. Thảo luận về mục đích của chương trình hợp tác nghiên cứu khoa học giữa UIT và Bosch.
+
+[70] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phan gioi thieu ve chuyen de doi moi sang tao trong nghien cuu khoa hoc da duoc thuc hien cac dai bieu da thao luan ve ket qua cua hoat dong doi moi sang tao tai don vi
+    Dap an    : Phần giới thiệu về chuyên đề Đổi mới sáng tạo trong nghiên cứu khoa học đã được thực hiện. Các đại biểu đã thảo luận về kết quả của hoạt động đổi mới sáng tạo tại đơn vị.
+    Mo hinh   : Phần giới thiệu về 'Chuyển đề đổi mới sáng tạo trong nghiên cứu khoa học' đã được thực hiện. Các đại biểu đã thảo luận về kết quả của hoạt động đổi mới sang tạo tại đơn vị.
+
+[71] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : du co kho khan nhung voi su giup do cua ban be ca hai ban da co the nam bat kien thuc o truong de tap trung vao nghien cuu
+    Dap an    : Dù có khó khăn, nhưng với sự giúp đỡ của bạn bè, cả hai bạn đã có thể nắm bắt kiến thức ở trường để tập trung vào nghiên cứu.
+    Mo hinh   : Dù có khó khăn, nhưng với sự giúp đỡ của bạn bè, cả hai bạn đã có thể nắm bắt kiến thức ở trường để tập trung vào nghiên cứu.
+
+[72] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lam viec nhom de phat trien ban than
+    Dap an    : Làm việc nhóm để phát triển bản thân.
+    Mo hinh   : Làm việc nhóm để phát triển bản thân.
+
+[73] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : minh da danh thoi gian de kham pha van hoa cong viec cua han quoc va hoc mot so tu tieng han
+    Dap an    : Mình đã dành thời gian để khám phá văn hóa công việc của Hàn Quốc và học một số từ tiếng Hàn.
+    Mo hinh   : Mình đã dành thời gian để khám phá văn hóa công việc của Hàn Quốc và học một số từ tiếng Hàn.
+
+[74] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqg ha noi 4560 nhom
+    Dap an    : ĐHQG Hà Nội (45-60 nhóm).
+    Mo hinh   : ĐHQG Hà Nội, 4560 nhóm.
+
+[75] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoi nghi nay duoc to chuc voi muc dich nang cao ky nang va nghiep vu cho doi ngu can bo cong doan trong cong tac quan ly va hieu biet ve cac quy dinh
+    Dap an    : Hội nghị này được tổ chức với mục đích nâng cao kỹ năng và nghiệp vụ cho đội ngũ cán bộ Công đoàn trong công tác quản lý và hiểu biết về các quy định.
+    Mo hinh   : Hội nghị này được tổ chức với mục đích nâng cao kỹ năng và nghiệp vụ cho đội ngũ cán bộ Công đoàn trong công tác quản lý và hiểu biết về các quy định.
+
+[76] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngo duc thanh nguoi lanh dao khoa khoa hoc may tinh
+    Dap an    : Ngô Đức Thành, người lãnh đạo Khoa Khoa học máy tính.
+    Mo hinh   : Ngô Đức Thành, người lãnh đạo Khoa Khoa học Máy tính.
+
+[77] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thong tin chi tiet ve tuyen sinh uit duoc cung cap boi theo ngoc lan thuy linh tai truong dai hoc cong nghe thong tin noi dao tao nguon nhan luc chat luong cao o ca bac dai hoc va sau dai hoc
+    Dap an    : Thông tin chi tiết về tuyển sinh UIT được cung cấp bởi Theo Ngọc Lân - Thuỳ Linh tại Trường Đại học Công nghệ Thông tin, nơi đào tạo nguồn nhân lực chất lượng cao ở cả bậc đại học và sau đại học.
+    Mo hinh   : Thông tin chi tiết về tuyển sinh UIT được cung cấp bởi Theo Ngọc Lân - Thùy Linh tại Trường Đại học Công nghệ Thông tin, nơi đào tạo nguồn nhân lực chất lượng cao ở cả bậc đại học và sau đại học.
+
+[78] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi thi thu thach tri tue nhan tao ai challenge nam 2023 tai thanh pho ho chi minh da to chuc le tong ket va trao giai tai khach san tan son nhat pavillon dien ra trang trong trong khuon kho tuan le huong ung ngay chuyen doi so quoc gia 1010 sau 3 thang hoi thi ai challenge hcmc 2023 da di den hoi ket
+    Dap an    : Hội thi Thử thách trí tuệ nhân tạo (AI Challenge) năm 2023 tại thành phố Hồ Chí Minh đã tổ chức lễ tổng kết và trao giải tại khách sạn Tân Sơn Nhất Pavillon, diễn ra trang trọng trong khuôn khổ tuần lễ hưởng ứng Ngày chuyển đổi số quốc gia 10/10. Sau 3 tháng, Hội thi AI Challenge HCMC 2023 đã đi đến hồi kết.
+    Mo hinh   : Hội thi thử thách trí tuệ nhân tạo (AI Challenge) năm 2023 tại Thành phố Hồ Chí Minh đã tổ chức lễ tổng kết và trao giải tại Khách sạn Tân Sơn Nhất (Singapore), diễn ra trang trọng trong khuôn khổ tuần lễ hưởng ứng Ngày chuyển đổi số quốc gia 10/10. Sau 3 tháng, Hội thi AI Challenge HCMC 2023 đã đi đến hội kết.
+
+[79] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chuc mung tat ca cac ban vao thang 11 truong dai hoc cong nghe thong tin la trung tam dao tao dai hoc va sau dai hoc cung cap nguon nhan luc chat luong cao
+    Dap an    : Chúc mừng tất cả các bạn vào tháng 11! Trường Đại học Công nghệ Thông tin là trung tâm đào tạo đại học và sau đại học, cung cấp nguồn nhân lực chất lượng cao.
+    Mo hinh   : Chúc mừng tất cả các bạn vào tháng 11, Trường Đại học Công nghệ Thông tin là trung tâm đào tạo đại học và sau đại học, cung cấp nguồn nhân lực chất lượng cao.
+
+[80] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chung toi mong muon cuoc thi se giup cac ban hoc sinh nuoi duong niem dam me nghien cuu va hoc tap ve tri tue nhan tao
+    Dap an    : Chúng tôi mong muốn cuộc thi sẽ giúp các bạn học sinh nuôi dưỡng niềm đam mê nghiên cứu và học tập về trí tuệ nhân tạo.
+    Mo hinh   : Chúng tôi mong muốn cuộc thi sẽ giúp các bạn học sinh nuôi dưỡng niềm đam mê nghiên cứu và học tập về Trí tuệ nhân tạo.
+
+[81] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac giao su da tham du hoi nghi quoc te mapr 2023 lan thu sau ve phan tich da phuong tien va nhan dang mau
+    Dap an    : Các Giáo sư đã tham dự hội nghị quốc tế MAPR 2023, lần thứ sáu về phân tích đa phương tiện và nhận dạng mẫu.
+    Mo hinh   : Các giáo sư đã tham dự Hội nghị quốc tế MUR 2023 lần thứ sáu về Phân tích đa phương tiện và nhận dạng mẫu.
+
+[82] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khuyen khich ban than de gan bo voi thuc te va phat trien trong tuong lai hieu nghia dang tim hieu ve bai toan hoc da phuong thuc trong tieng viet
+    Dap an    : Khuyến khích bản thân để gắn bó với thực tế và phát triển trong tương lai. Hiếu Nghĩa đang tìm hiểu về bài toán Học đa phương thức trong tiếng Việt.
+    Mo hinh   : Khuyến khích bản thân để gắn bó với thực tế và phát triển trong tương lai. Hiểu Nghĩa đang tìm hiểu về bài toán học đa phương thức trong tiếng Việt.
+
+[83] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : quang huy khong ngung tham gia tich cuc vao cac nghien cuu khoa hoc
+    Dap an    : Quang Huy không ngừng tham gia tích cực vào các nghiên cứu khoa học.
+    Mo hinh   : Quang Huy không ngừng tham gia tích cực vào các nghiên cứu khoa học.
+
+[84] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : doi da xac dinh muc tieu la no luc giu vung vi tri so 1 tai uit trong ca 3 vong dau va mang ve chien thang o vong thi quoc gia
+    Dap an    : Đội đã xác định mục tiêu là nỗ lực giữ vững vị trí số 1 tại UIT trong cả 3 vòng đấu và mang về chiến thắng ở vòng thi Quốc gia.
+    Mo hinh   : Đội đã xác định mục tiêu là nỗ lực giữ vững vị trí số 1 tại UIT trong cả 3 vòng đấu và mang về chiến thắng ở vòng thi quốc gia.
+
+[85] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : de di den da nang ho se duoc ho tro 6 trieu vnd cho chi phi di chuyen
+    Dap an    : Để đi đến Đà Nẵng, họ sẽ được hỗ trợ 6 triệu VND cho chi phí di chuyển.
+    Mo hinh   : Để đi đến Đà Nẵng, họ sẽ được hỗ trợ 6 triệu VND cho chi phí di chuyển.
+
+[86] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bat dau tu 12 den 18 thang 10 nguon phien an thong tin chi tiet truong dai hoc cong nghe thong tin la mot trung tam giao duc dai hoc
+    Dap an    : Bắt đầu từ 12 đến 18 tháng 10. Nguồn: Phiên An. Thông tin chi tiết: Trường Đại học Công nghệ Thông tin là một trung tâm giáo dục đại học.
+    Mo hinh   : Bắt đầu từ 12 đến 18 tháng 10, nguồn: Phiên An. Thông tin chi tiết: Trường Đại học Công nghệ Thông tin là một trung tâm giáo dục đại học.
+
+[87] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bai viet lien quan su kien uit career day hay ngay hoi sinh vien va doanh nghiep dien ra hang nam tai truong dh cong nghe thong tin dhqghcm
+    Dap an    : Bài viết liên quan: sự kiện UIT Career Day, hay Ngày hội Sinh viên và Doanh nghiệp, diễn ra hàng năm tại Trường ĐH Công nghệ Thông tin ĐHQG-HCM.
+    Mo hinh   : Bài viết liên quan: Sự kiện UIT Career Day, hay Ngày hội Sinh viên và Doanh nghiệp, diễn ra hàng năm tại Trường ĐH Công nghệ Thông tin ĐHQG-HCM.
+
+[88] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau khi danh gia nhieu yeu to lien quan den lab giang vien va moi truong hoc tap tai hosei
+    Dap an    : Sau khi đánh giá nhiều yếu tố liên quan đến lab, giảng viên và môi trường học tập tại Hosei.
+    Mo hinh   : Sau khi đánh giá nhiều yếu tố liên quan đến lab, giảng viên và môi trường học tập tại hosei.
+
+[89] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : them vao do viec xung ho cung rat khac biet giua cac nuoc
+    Dap an    : Thêm vào đó, việc xưng hô cũng rất khác biệt giữa các nước.
+    Mo hinh   : Thêm vào đó, việc xung hộ cũng rất khác biệt giữa các nước.
+
+[90] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai kuala lumpur malaysia cac bai bao khoa hoc duoc trinh bay tai hoi nghi deu tuan theo quy trinh binh duyet nghiem ngat de dam bao chat luong
+    Dap an    : Tại Kuala Lumpur, Malaysia, các bài báo khoa học được trình bày tại hội nghị đều tuân theo quy trình bình duyệt nghiêm ngặt để đảm bảo chất lượng.
+    Mo hinh   : Tại Kon Tum, Malaysia, các bài báo khoa học được trình bày tại hội nghị đều tuân theo quy trình bình duyệt nghiêm ngặt để đảm bảo chất lượng.
+
+[91] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : anh co the tim kiem co hoi nao de lam viec tai my nghien cuu va xuat ban cac bai bao hoi nghi bai bao tap chi trong khi hoc thac si
+    Dap an    : Anh có thể tìm kiếm cơ hội nào để làm việc tại Mỹ? Nghiên cứu và xuất bản các bài báo hội nghị, bài báo tạp chí trong khi học thạc sĩ.
+    Mo hinh   : Anh có thể tìm kiếm cơ hội nào để làm việc tại Mỹ, nghiên cứu và xuất bản các bài báo hội nghị, bài báo tạp chí trong khi học thạc sĩ?
+
+[92] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : kiem dinh chat luong cua cac phuong tien giao thong
+    Dap an    : Kiểm định chất lượng của các phương tiện giao thông.
+    Mo hinh   : Kiểm định chất lượng của các phương tiện giao thông.
+
+[93] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dieu thiet yeu nhat la sau khi da hoc hoi va phat trien khong ngung
+    Dap an    : Điều thiết yếu nhất là sau khi đã học hỏi và phát triển không ngừng.
+    Mo hinh   : Điều thiết yếu nhất là sau khi đã học hỏi và phát triển không ngừng.
+
+[94] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tham gia cac khoa hoc va hoi thao de giao luu voi cac chuyen gia va nha khoa hoc trong linh vuc cua ban la dieu rat quan trong mang luoi quan he se mo ra nhieu co hoi hoc tap va phat trien
+    Dap an    : Tham gia các khóa học và hội thảo để giao lưu với các chuyên gia và nhà khoa học trong lĩnh vực của bạn là điều rất quan trọng. Mạng lưới quan hệ sẽ mở ra nhiều cơ hội học tập và phát triển.
+    Mo hinh   : Tham gia các học và hội thảo để giao lưu với các chuyên gia và nhà khoa học trong lĩnh vực của bạn là điều rất quan trọng. Mạng lưới quan hệ sẽ mở ra nhiều cơ hội học tập và phát triển.
+
+[95] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mot cuoc hop da duoc to chuc giua truong dai hoc cong nghe thong tin dhqghcm uit va dai hoc macquarie de thao luan ve hop tac
+    Dap an    : Một cuộc họp đã được tổ chức giữa Trường Đại học Công nghệ Thông tin ĐHQG-HCM (UIT) và Đại học Macquarie để thảo luận về hợp tác.
+    Mo hinh   : Một cuộc họp đã được tổ chức giữa Trường Đại học Công nghệ Thông tin, ĐHQG-HCM (UIT) và Đại học Macquarie để thảo luận về hợp tác.
+
+[96] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban co nhu cau tim kiem mot cong viec voi thu nhap tot hon
+    Dap an    : Bạn có nhu cầu tìm kiếm một công việc với thu nhập tốt hơn.
+    Mo hinh   : Bạn có nhu cầu tìm kiếm một công việc với thu nhập tốt hơn.
+
+[97] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cach thuc tham gia cac khoa hoc
+    Dap an    : Cách thức tham gia các khóa học.
+    Mo hinh   : Cách thức tham gia các học.
+
+[98] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cuoc thi co cac track noi dung nhu hieu biet ngon ngu noi tieng viet slu ung dung di dong su dung ai samsung nhan dien chu viet tay tieng viet ocr toi uu hoa lo trinh tiki ngan hang su dung ai naver vietcombank
+    Dap an    : Cuộc thi có các track nội dung như: - Hiểu biết ngôn ngữ nói tiếng Việt (SLU) - Ứng dụng di động sử dụng AI (Samsung) - Nhận diện chữ viết tay tiếng Việt (OCR) - Tối ưu hóa lộ trình (TIKI) - Ngân hàng sử dụng AI, NAVER, Vietcombank.
+    Mo hinh   : Cuộc thi có cáctrack nội dung như: Hiểu biết ngôn ngữ nổi tiếng Việt (Tiếng Việt ứng dụng di động), Sử dụng AI (Samsung nhận diện chữ viết tay, Tiếng Việt OECD tối ưu hóa lộ trình), Tải ngân hàng sử dụng AI: Naver Việtcombank.
+
+[99] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thong qua su kien nay cac nha nghien cuu tre da co co hoi de ket noi va xay dung moi quan he chuyen mon hoi nghi khoa hoc tre va nghien cuu sinh 2023 da thanh cong ruc ro trong viec thuc day sang tao va tien bo tri thuc trong cong dong nghien cuu tre tai uit
+    Dap an    : Thông qua sự kiện này, các nhà nghiên cứu trẻ đã có cơ hội để kết nối và xây dựng mối quan hệ chuyên môn. Hội nghị Khoa học Trẻ và Nghiên cứu Sinh 2023 đã thành công rực rỡ trong việc thúc đẩy sáng tạo và tiến bộ tri thức trong cộng đồng nghiên cứu trẻ tại UIT.
+    Mo hinh   : Thông qua sự kiện này, các nhà nghiên cứu trẻ đã có cơ hội để kết nối và xây dựng mối quan hệ chuyên môn. Hội nghị khoa học trẻ và nghiên cứu sinh 2023 đã thành công rực rỡ trong việc thúc đẩy sáng tạo và tiến bộ tri thức trong cộng đồng nghiên cứu Trẻ tại UIT.
+
+[100] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gs ts do phuc pho hieu truong truoc day
+    Dap an    : GS. TS. Đỗ Phúc - Phó Hiệu trưởng trước đây;
+    Mo hinh   : GS. TS Đỗ Phúc - Phó Hiệu trưởng trước đây.
+
+[101] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : {sentence lien ket den bai viet dung de ho tro nguoi dung }
+    Dap an    : {'Sentence': 'Liên kết đến bài viết: dung: Để hỗ trợ người dùng, '}
+    Mo hinh   : {'Sentence': 'Liên kết đến bài viết: dung: Để hỗ trợ người dùng. '}
+
+[102] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu tri hoi thao voi muc dich thiet lap mot he sinh thai xanh va ben vung mot trong nhung nhiem vu quan trong cua chien luoc phat trien dhqghcm giai doan 20212030 la phat trien khu do thi dai hoc theo tieu chi xanh
+    Dap an    : Chủ trì hội thảo với mục đích thiết lập một hệ sinh thái xanh và bền vững. Một trong những nhiệm vụ quan trọng của Chiến lược phát triển ĐHQG-HCM giai đoạn 2021-2030 là phát triển khu đô thị đại học theo tiêu chí xanh.
+    Mo hinh   : Chủ trì hội thảo với mục đích thiết lập một hệ sinh thái xanh và bền vững. Một trong những nhiệm vụ quan trọng của chiến lược phát triển ĐHQG-HCM giai đoạn 2021-2030 là phát triển Khu đô thị đại học theo tiêu chí xanh.
+
+[103] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : pho giam doc trung tam quan ly va phat trien khu do thi tran viet thang da cho biet rang khu do thi dhqghcm la mot khu do thi mo voi nhieu loi vao
+    Dap an    : Phó Giám đốc Trung tâm Quản lý và Phát triển Khu Đô thị, Trần Việt Thắng, đã cho biết rằng Khu Đô thị ĐHQG-HCM là một khu đô thị mở với nhiều lối vào.
+    Mo hinh   : Phó Giám đốc Trung tâm Quản lý và Phát triển Khu đô thị, Trần Việt Thắng, đã cho biết rằng Khu Đô thị ĐHQG-HCM là một khu đô thị mở với nhiều lối vào.
+
+[104] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nam le khac dinh to nguyen trung
+    Dap an    : Nam Lê Khắc, Đỉnh Tô Nguyên Trung.
+    Mo hinh   : Nam Lê Khánh Định, Tô Nguyễn Trung.
+
+[105] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : doi p3 se phai doi mat voi nhieu ap luc trong viec giu vung thanh tich nhung cac thi sinh van phai co gang
+    Dap an    : Đội P3 sẽ phải đối mặt với nhiều áp lực trong việc giữ vững thành tích, nhưng các thí sinh vẫn phải cố gắng.
+    Mo hinh   : Đội P3 sẽ phải đối mặt với nhiều áp lực trong việc giữ vững thành tích, nhưng các thí sinh vẫn phải cố gắng.
+
+[106] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong vu dinh thang nguoi phu trach sap practice ba tran nhu phung chuyen gia ve thuong hieu nha tuyen dung tai bgsw viet nam
+    Dap an    : Ông Vũ Đình Thắng - người phụ trách SAP Practice; bà Trần Như Phụng - chuyên gia về thương hiệu nhà tuyển dụng tại BGSW Việt Nam.
+    Mo hinh   : Ông Vũ Đình Thăng, người phụ trách SAC practice; Bà Trần Như Phụng, chuyên gia về thương hiệu nhà tuyển dụng tại BGSW Việt Nam.
+
+[107] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm kien thuc ma kim chi da tiep thu tai truong dai hoc cong nghe thong tin dhqghcm uit da tao nen tang vung chac cho viec thich nghi va hoc tap cua co ay tai canada den nay
+    Dap an    : HCM. Kiến thức mà Kim Chi đã tiếp thu tại trường Đại học Công nghệ Thông tin ĐHQG-HCM (UIT) đã tạo nền tảng vững chắc cho việc thích nghi và học tập của cô ấy tại Canada. Đến nay.
+    Mo hinh   : HCM. Kiến thức mà Kim Chi đã tiếp thu tại Trường Đại học Công nghệ Thông tin, ĐHQG-HCM (UIT) đã tạo nền tảng vững chắc cho việc thích nghi và học tập của cô ấy tại Canada đến nay.
+
+[108] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : luon co co hoi de theo duoi dam me khong bao gio la qua muon
+    Dap an    : Luôn có cơ hội để theo đuổi đam mê, không bao giờ là quá muộn.
+    Mo hinh   : Luôn có cơ hội để theo đuổi đam mê, không bao giờ là quá muộn.
+
+[109] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai do co cac tap doan nanya tech
+    Dap an    : Tại đó có các tập đoàn Nanya Tech.
+    Mo hinh   : Tại đó, có các tập đoàn Nanya Tech.
+
+[110] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : chung ta se thao luan ve du an va cach thuc de tiep tuc chuong trinh hop tac
+    Dap an    : Chúng ta sẽ thảo luận về dự án và cách thức để tiếp tục chương trình hợp tác.
+    Mo hinh   : Chúng ta sẽ thảo luận về dự án và cách thức để tiếp tục chương trình hợp tác.
+
+[111] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hon nua dieu phuong cung phai doi dien voi mot so kho khan trong viec hoa nhap van hoa va thiet lap moi quan he dong nghiep
+    Dap an    : Hơn nữa, Diệu Phương cũng phải đối diện với một số khó khăn trong việc hòa nhập văn hóa và thiết lập mối quan hệ đồng nghiệp.
+    Mo hinh   : Hơn nữa, điều phương cũng phải đối diện với một số khó khăn trong việc nhập văn hóa và thiết lập mối quan hệ đồng nghiệp.
+
+[112] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyẽn tran minh anh chuyen mon khoa hoc may tinh 10
+    Dap an    : Nguyễn Trần Minh Anh - Chuyên môn: Khoa học máy tính 10.
+    Mo hinh   : Nguyễn Trần Minh Anh - Chuyên môn Khoa học Máy tính: 10.
+
+[113] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : so luong chuong trinh dao tao duoc kiem dinh cua dhqghcm la cao nhat ca nuoc voi khoang 126 chuong trinh dat tieu chuan quoc te
+    Dap an    : Số lượng chương trình đào tạo được kiểm định của ĐHQG-HCM là cao nhất cả nước, với khoảng 126 chương trình đạt tiêu chuẩn quốc tế.
+    Mo hinh   : Số lượng chương trình đào tạo được kiểm định của ĐHQG-HCM là cao nhất cả nước, với khoảng 126 chương trình đạt tiêu chuẩn quốc tế.
+
+[114] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqghcm luon hieu ro tam quan trong cua viec dong gop vao cong tac ly luan chung cua trung uong va cac dia phuong
+    Dap an    : ĐHQG-HCM luôn hiểu rõ tầm quan trọng của việc đóng góp vào công tác lý luận chung của trung ương và các địa phương.
+    Mo hinh   : ĐHQG-HCM luôn hiểu rõ tầm quan trọng của việc đóng góp vào công tác lý luận chung của Trung ương và các địa phương.
+
+[115] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngoai ra uit se gioi thieu cac san pham nghien cuu nhu nhan dien khuon mat de diem danh tu dong doc thong tin tu giay to ca nhan va van ban hanh chinh he thong giam sat qua camera he thong dem xe cho giao thong thong minh
+    Dap an    : Ngoài ra, UIT sẽ giới thiệu các sản phẩm nghiên cứu như: Nhận diện khuôn mặt để điểm danh - Tự động đọc thông tin từ giấy tờ cá nhân và văn bản hành chính - Hệ thống giám sát qua camera - Hệ thống đếm xe cho giao thông thông minh.
+    Mo hinh   : Ngoài ra, UIT sẽ giới thiệu các sản phẩm nghiên cứu như nhận diện khuôn mặt để điểm danh, tự động đọc thông tin từ giấy tờ cá nhân và văn bản hành chính hệ thống giám sát qua camera hệ thống đèn xe cho giao thông thông minh.
+
+[116] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hong nhung co y dinh hoc hoi tu cac chuyen gia va trai nghiem mot cach lam viec moi me
+    Dap an    : Hồng Nhung có ý định học hỏi từ các chuyên gia và trải nghiệm một cách làm việc mới mẻ.
+    Mo hinh   : Hồng Nhung có ý định học hỏi từ các chuyên gia và trải nghiệm một cách làm việc mới mẻ.
+
+[117] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chinh nhung yeu cau ve ngoai ngu va chuyen mon trong nhung nam hoc tai uit da dinh hinh quyet dinh du hoc cua anh
+    Dap an    : Chính những yêu cầu về ngoại ngữ và chuyên môn trong những năm học tại UIT đã định hình quyết định du học của anh.
+    Mo hinh   : Chính những yêu cầu về ngoại ngữ và chuyên môn trong những năm học tại UIT đã định hình quyết định du học của Anh.
+
+[118] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : du lieu duoc bao ve ky nang thuc hanh atttvoi kien thuc va ky nang vung ben
+    Dap an    : Dữ liệu được bảo vệ... Kỹ năng thực hành ATTTVới kiến thức và kỹ năng vững bền.
+    Mo hinh   : Dữ liệu được bảo vệ kỹ năng thực hành AOT-T voi kiến thức và kỹ năng vững bền.
+
+[119] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : le phi phong o se duoc mien cho sinh vien khuyet tat va giam 50% cho sinh vien mo coi
+    Dap an    : Lệ phí phòng ở sẽ được miễn cho sinh viên khuyết tật và giảm 50% cho sinh viên mồ côi.
+    Mo hinh   : Lệ phí phòng ở sẽ được miễn cho sinh viên khuyết tật và giảm 50% cho Sinh viên mở coi.
+
+[120] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nii thiet lap ket noi quoc te thong qua cac chuong trinh nghien cuu hop tac internship va hoc bong cho sinh vien phd
+    Dap an    : NII thiết lập kết nối quốc tế thông qua các chương trình nghiên cứu hợp tác, internship và học bổng cho sinh viên PhD.
+    Mo hinh   : ANU thiết lập kết nối quốc tế thông qua các chương trình nghiên cứu, hợp tác internship và học bổng cho sinh viên PhD.
+
+[121] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec thu thap va trich xuat doi hoi nhieu chi phi va trang thiet bi dac thu do day la mot don vi nghien cuu nuoc ngoai anh se phai doi mat voi mot so kho khan nhat dinh
+    Dap an    : Việc thu thập và trích xuất đòi hỏi nhiều chi phí và trang thiết bị đặc thù. Do đây là một đơn vị nghiên cứu nước ngoài, anh sẽ phải đối mặt với một số khó khăn nhất định.
+    Mo hinh   : Việc thu thập và trích xuất đòi hỏi nhiều chi phí và trang thiết bị đặc thù, do đây là một đơn vị nghiên cứu nước ngoài, anh sẽ phải đối mặt với một số khó khăn nhất định.
+
+[122] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : giup thi sinh co kha nang the hien va mo rong kien thuc cua ho
+    Dap an    : Giúp thí sinh có khả năng thể hiện và mở rộng kiến thức của họ.
+    Mo hinh   : Giúp thí sinh có khả năng thể hiện và mở rộng kiến thức của họ.
+
+[123] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nho vao kien thuc da tiep thu tai uit luan de dang thich nghi voi moi truong hoc tap o nhat ban
+    Dap an    : Nhờ vào kiến thức đã tiếp thu tại UIT, Luân dễ dàng thích nghi với môi trường học tập ở Nhật Bản.
+    Mo hinh   : Nhờ vào kiến thức đã tiếp thu tại UIT, luận đề đang thích nghi với môi trường học tập ở Nhật Bản.
+
+[124] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : theo chia se cua anh dinh thi anh thi da phat bieu
+    Dap an    : Theo chia sẻ của anh Đình Thi, anh Thi đã phát biểu.
+    Mo hinh   : Theo chia sẻ của Anh Đình Thị, Anh Thị đã phát biểu.
+
+[125] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : den voi nhung cuoc thi lon nhu icpc quoc gia ky thi chon hoc sinh gioi cap quoc gia hsgqg va duong len dinh olympia
+    Dap an    : Đến với những cuộc thi lớn như ICPC quốc gia, kỳ thi chọn học sinh giỏi cấp quốc gia (HSGQG) và Đường lên đỉnh Olympia.
+    Mo hinh   : Đến với những cuộc thi lớn như ICPC quốc gia, kỳ thi chọn học sinh giỏi cấp quốc gia ( HSGQG) và đường lên đỉnh Olympia.
+
+[126] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nguoi nam sinh cung da cho biet them
+    Dap an    : Người nam sinh cũng đã cho biết thêm.
+    Mo hinh   : Người nam sinh cũng đã cho biết thêm.
+
+[127] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec em lot vao vong thi thang cua chuong trinh duong len dinh olympia khi hoc lop 11 la mot minh chung ro rang
+    Dap an    : Việc em lọt vào vòng thi tháng của chương trình Đường lên đỉnh Olympia khi học lớp 11 là một minh chứng rõ ràng.
+    Mo hinh   : Việc em lọt vào vòng thi tháng của chương trình 'Đường lên đỉnh Olympia' khi học lớp 11 là một minh chứng rõ ràng.
+
+[128] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : kinh nghiem se duoc tich luy qua moi hoat dong doan hoi trong thoi sinh vien
+    Dap an    : Kinh nghiệm sẽ được tích lũy qua mỗi hoạt động Đoàn - Hội trong thời sinh viên.
+    Mo hinh   : Kinh nghiệm sẽ được tích lũy qua mọi hoạt động Đoàn - Hội trong thời sinh viên.
+
+[129] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bach khoa university in hanoi
+    Dap an    : Bach Khoa University in Hanoi.
+    Mo hinh   : Bách Khoa University in Hanoi.
+
+[130] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : muc thu nhap co the dao dong tu 2 500 den 3 000 usd moi thang 6070 trieu dong cong viec cua mot ky su thiet ke vi mach phuc tap hon
+    Dap an    : Mức thu nhập có thể dao động từ 2. 500 đến 3. 000 USD mỗi tháng (60-70 triệu đồng). 'Công việc của một kỹ sư thiết kế vi mạch phức tạp hơn, '
+    Mo hinh   : Mức thu nhập có thể dao động từ 2. 500 đến 3. 000 USD mỗi tháng, 60-65 triệu đồng. Công việc của một kỹ sư thiết kế vi mạch phức tạp hơn.
+
+[131] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : sinh vien thuong co trach nhiem trong cac linh vuc thiet ke vi mach kiem thu va dong goi
+    Dap an    : Sinh viên thường có trách nhiệm trong các lĩnh vực thiết kế vi mạch, kiểm thử và đóng gói.
+    Mo hinh   : Sinh viên thường có trách nhiệm trong các lĩnh vực thiết kế vi mạch, kiểm thử và đóng gói.
+
+[132] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khang dang huong toi viec lam quen voi chuong trinh hoc va hoan thanh tot nam hoc theo yeu cau cua nha truong trong nam toi ben canh do khang cung chia se “minh van dang phan van vi ngoai nganh ky thuat phan mem minh thuc su dam me tri tue nhan tao
+    Dap an    : Khang đang hướng tới việc làm quen với chương trình học và hoàn thành tốt năm học theo yêu cầu của Nhà trường trong năm tới. Bên cạnh đó, Khang cũng chia sẻ: “Mình vẫn đang phân vân vì ngoài ngành Kỹ thuật Phần mềm, mình thực sự đam mê trí tuệ nhân tạo.
+    Mo hinh   : Khang đang hướng tới việc làm quen với chương trình học và hoàn thành tốt năm học theo yêu cầu của nhà trường trong năm tới. Bên cạnh đó, Khang cũng chia sẻ: “Mình vẫn đang phân vân vì ngoài ngành kỹ thuật phần mềm, mình thực sự đam mê Trí tuệ nhân tạo.
+
+[133] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban co the lam quen voi nhieu ban be tu cac tinh thanh khac nhau tu do cai thien ky nang mem cho tuong lai theo phuong thao tuyen sinh uit xem them thong tin chi tiet tai truong dai hoc cong nghe thong tin la mot trung tam dao tao dai hoc
+    Dap an    : Bạn có thể làm quen với nhiều bạn bè từ các tỉnh thành khác nhau, từ đó cải thiện kỹ năng mềm cho tương lai. Theo Phương Thảo - Tuyển sinh UIT, xem thêm thông tin chi tiết tại: Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học.
+    Mo hinh   : Bạn có thể làm quen với nhiều bạn bè từ các tỉnh thành khác nhau, từ đó cải thiện kỹ năng mềm cho tương lai. Theo Phương Thảo - Tuyển sinh UIT. Xem thêm thông tin chi tiết tại: Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học.
+
+[134] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dai hoc cong nghe thong tin da tro thanh mot truong dai hoc danh tieng trong linh vuc cong nghe thong tin – truyen thong va cac linh vuc lien quan tai khu vuc chau a link bai dung do la chi dao cua pgs
+    Dap an    : Đại học Công nghệ Thông tin đã trở thành một trường đại học danh tiếng trong lĩnh vực công nghệ thông tin – truyền thông và các lĩnh vực liên quan tại khu vực Châu Á. Link bài: dung: Đó là chỉ đạo của PGS.
+    Mo hinh   : Đại học Công nghệ Thông tin đã trở thành một trường đại học danh tiếng trong lĩnh vực công nghệ thông tin – truyền thông và các lĩnh vực liên quan tại khu vực Châu Á. Link bài: dung: Đó là chỉ đạo của PGS.
+
+[135] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : to chuc nam trong khu cong nghe cao khu vuc chinh cua tp thu duc
+    Dap an    : Tổ chức nằm trong Khu Công nghệ cao - khu vực chính của TP Thủ Đức.
+    Mo hinh   : Tổ chức nằm trong khu công nghệ cao, khu vực chính của TP Thủ Đức.
+
+[136] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tu do dhqghcm da phat huy duoc gia tri cot loi la xuat sac
+    Dap an    : Từ đó, ĐHQG-HCM đã phát huy được giá trị cốt lõi là xuất sắc.
+    Mo hinh   : Từ đó, ĐHQG-HCM đã phát huy được giá trị cốt lõi là xuất sắc.
+
+[137] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cac thi sinh tham gia cuoc thi chu yeu la nhung nguoi dang van hanh cac he thong cong nghe thong tin trong doanh nghiep
+    Dap an    : Các thí sinh tham gia cuộc thi chủ yếu là những người đang vận hành các hệ thống công nghệ thông tin trong doanh nghiệp.
+    Mo hinh   : Các thí sinh tham gia cuộc thi chủ yếu là những người đang vận hành các hệ thống công nghệ thông tin trong doanh nghiệp.
+
+[138] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : noi bat voi nhieu thanh tuu dhqghcm da tao ra nhung dau an quan trong
+    Dap an    : Nổi bật với nhiều thành tựu, ĐHQG-HCM đã tạo ra những dấu ấn quan trọng.
+    Mo hinh   : Nổi bật với nhiều thành tựu, ĐHQG-HCM đã tạo ra những dấu ấn quan trọng.
+
+[139] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : 80 trieu dong hoc sinh dat giai o cac mon toan ly hoa van va tieng anh se nhan duoc 60 trieu dong cho giai ba va 40 trieu dong cho giai khuyen khich
+    Dap an    : 80 triệu đồng. Học sinh đạt giải ở các môn toán, lý, hóa, văn, và tiếng Anh sẽ nhận được 60 triệu đồng cho giải ba và 40 triệu đồng cho giải khuyến khích.
+    Mo hinh   : 80 triệu đồng, học sinh đạt giải ở các môn Toán, Lý,, Văn và Tiếng Anh, sẽ nhận được 60 triệu đồng cho giải Ba và 40 triệu động cho giải Khuyến khích.
+
+[140] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nam tan sinh vien khac da gianh giai nhi trong ky thi chon hoc sinh gioi quoc gia mon tin hoc nhan 350 trieu dong va hoc bong luu tru tai ky tuc xa dai hoc quoc gia tp hcm nhung tan sinh vien dat giai ba
+    Dap an    : Năm tân sinh viên khác đã giành giải nhì trong kỳ thi chọn học sinh giỏi quốc gia môn tin học, nhận 350 triệu đồng và học bổng lưu trú tại ký túc xá Đại học Quốc gia TP. HCM. Những tân sinh viên đạt giải ba.
+    Mo hinh   : Năm tân sinh viên khác đã giành giải Nhì trong kỳ thi chọn học sinh giỏi quốc gia môn Tin học, nhận 350 triệu đồng và học bổng lưu trú tại Ký túc xá Đại học Quốc gia TP. HCM, những tân sinh vien đạt giải Ba.
+
+[141] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong vu hai quan kien nghi pho thu tuong nhanh chong ban hanh nghi dinh lien quan den dhqg va quy che to chuc hoat dong cua dhqg va cac co so giao duc dai hoc thanh vien voi muc tieu tang quyen tu chu
+    Dap an    : Ông Vũ Hải Quân kiến nghị Phó Thủ tướng nhanh chóng ban hành nghị định liên quan đến ĐHQG và Quy chế tổ chức, hoạt động của ĐHQG và các cơ sở giáo dục đại học thành viên, với mục tiêu tăng quyền tự chủ.
+    Mo hinh   : Ông Vũ Hải Quân, kiến nghị Phó Thủ tướng nhanh chóng ban hành Nghị định liên quan đến ĐHQG và quy chế tổ chức hoạt động của ĐHQGH và các cơ sở giáo dục đại học thành viên, với mục tiêu tăng quyền tự chủ.
+
+[142] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : do do pho thu tuong khang dinh rang hai dhqg
+    Dap an    : Do đó, Phó Thủ tướng khẳng định rằng hai ĐHQG.
+    Mo hinh   : Do đó, Phó Thủ tướng khẳng định rằng hai ĐHQG.
+
+[143] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : truong dai hoc cong nghe thong tin da khang dinh duoc vi tri cua minh nhu mot truong dai hoc co uy tin trong linh vuc cong nghe thong tin – truyen thong o khu vuc chau a
+    Dap an    : Trường Đại học Công nghệ Thông tin đã khẳng định được vị trí của mình như một trường đại học có uy tín trong lĩnh vực công nghệ thông tin – truyền thông ở khu vực Châu Á.
+    Mo hinh   : Trường Đại học Công nghệ Thông tin đã khẳng định được vị trí của mình như một trường đại học có uy tín trong lĩnh vực công nghệ thông tin – truyền thông ở khu vực Châu Á.
+
+[144] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : pho thu tuong tran hong ha da dan dat doan cong tac trong chuyen tham va lam viec voi truong dai hoc cong nghe thong tin thuoc dai hoc quoc gia thanh pho ho chi minh
+    Dap an    : Phó Thủ tướng Trần Hồng Hà đã dẫn dắt đoàn công tác trong chuyến thăm và làm việc với Trường Đại học Công nghệ Thông tin, thuộc Đại học Quốc gia Thành phố Hồ Chí Minh.
+    Mo hinh   : Phó Thủ tướng Trần Hồng Hà đã dẫn dắt đoàn công tác trong chuyến thăm và làm việc với Trường Đại học Công nghệ Thông tin, thuộc Đại học Quốc gia Thành phố Hồ Chí Minh.
+
+[145] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong my cho hay do ngoc thao nguyen ban cua ong
+    Dap an    : Ông Mỹ cho hay. Đỗ Ngọc Thảo Nguyên, bạn của ông.
+    Mo hinh   : Ông Mỹ cho hay, Đỗ Ngọc Thảo, nguyên bạn của ông.
+
+[146] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gs ho teck hua ha duc hoa hieu truong ntu nhan manh rang su hop tac nay la bang chung cho moi quan he ngay cang khang khit giua singapore va viet nam da va dang duoc cung co trong nhung nam qua
+    Dap an    : GS Ho Teck Hua (Hà Đức Hoa) - Hiệu trưởng NTU, nhấn mạnh rằng sự hợp tác này là 'bằng chứng cho mối quan hệ ngày càng khăng khít giữa Singapore và Việt Nam, đã và đang được củng cố trong những năm qua. '
+    Mo hinh   : GS. Ho Teck Hua (Hà Đức Hoa) - Hiệu trưởng NTU, nhấn mạnh rằng sự hợp tác này là bằng chứng cho mối quan hệ ngày càng kháng khít giữa Singapore và Việt Nam, đã và đang được củng cố trong những năm qua.
+
+[147] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi dong lien nganh cong nghe sinh hoc y sinh suc khoe dhqghcm co gs ts dang mau chien lam chu tich
+    Dap an    : Hội đồng liên ngành Công nghệ Sinh học - Y sinh - Sức khỏe ĐHQG-HCM có GS. TS Đặng Mậu Chiến làm Chủ tịch;
+    Mo hinh   : Hội đồng liên ngành Công nghệ Sinh học - Y sinh - Sức ĐHQG-HCM có GS. TS. Đặng Mẫu Chiến làm Chủ tịch.
+
+[148] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : pgs la mot phan cua truong dai hoc cong nghe thong tin dhqghcm
+    Dap an    : PGS. là một phần của Trường Đại học Công nghệ Thông tin ĐHQG-HCM.
+    Mo hinh   : PGS là một phần của Trường Đại học Công nghệ Thông tin, ĐHQG-HCM.
+
+[149] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo do 99 suat hoc bong da duoc trao cho dhqghcm
+    Dap an    : Theo đó, 99 suất học bổng đã được trao cho ĐHQG-HCM.
+    Mo hinh   : Theo đó, 99 suất học bổng đã được trao cho ĐHQG-HCM.
+
+[150] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nho vay su giao tiep va chia se giua cac the he tro nen manh me hon
+    Dap an    : Nhờ vậy, sự giao tiếp và chia sẻ giữa các thế hệ trở nên mạnh mẽ hơn.
+    Mo hinh   : Nhờ vậy, sự giao tiếp và chia sẻ giữa các thế hệ trở nên mạnh mẽ hơn.
+
+[151] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : internet society hay isoc la mot to chuc quoc te hoat dong phi loi nhuan phi chinh phu va bao gom cac thanh vien co trinh do chuyen nganh
+    Dap an    : Internet Society hay ISOC là một tổ chức quốc tế hoạt động phi lợi nhuận, phi chính phủ và bao gồm các thành viên có trình độ chuyên ngành.
+    Mo hinh   : Internet Challenge, hay ISoc, là một tổ chức quốc tế hoạt động phi lợi nhuận, phi chính phủ và bao gồm các thành viên có trình độ chuyên ngành.
+
+[152] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : to chuc nay chu trong den tieu chuan giao duc va cac van de ve chinh sach
+    Dap an    : Tổ chức này chú trọng đến: tiêu chuẩn, giáo dục và các vấn đề về chính sách.
+    Mo hinh   : Tổ chức này chú trọng đến tiêu chuẩn giáo dục và các vấn đề về chính sách.
+
+[153] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : voi tren 145 to chuc thanh vien va 65000 thanh vien ca nhan isoc bao gom nhung con nguoi cu the trong cong dong internet
+    Dap an    : Với trên 145 tổ chức thành viên và 65.000 thành viên cá nhân, ISOC bao gồm những con người cụ thể trong cộng đồng Internet.
+    Mo hinh   : Với trên 145 tổ chức thành viên và 6500 thành viên cá nhân, ISOC bao gồm những con người cụ thể trong cộng đồng internet.
+
+[154] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : moi chi tiet co the tim thay tai website cua isoc
+    Dap an    : Mọi chi tiết có thể tìm thấy tại website của ISOC.
+    Mo hinh   : Mọi chi tiết có thể tìm thấy tại website của IOC.
+
+[155] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : internet society nam o gan thu do washington dc hoa ky va geneva thuy si
+    Dap an    : Internet Society nằm ở gần thủ đô Washington, DC, Hoa Kỳ và Geneva, Thụy Sĩ.
+    Mo hinh   : Internet Challenge nằm ở gần Thủ đô Washington, Đ/c Hoa Kỳ và Geneva, Sĩ.
+
+[156] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : so hoi vien cua no bao gom hon 145 to chuc thanh vien va hon 65000 ca nhan
+    Dap an    : Số hội viên của nó bao gồm hơn 145 tổ chức thành viên và hơn 65.000 cá nhân.
+    Mo hinh   : Số hội viên của nó bao gồm hơn 145 tổ chức thành viên và hơn 60000 cá nhân.
+
+[157] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thanh vien con co the tu lap mot chi nhanh cua to chuc tuy theo vi tri hoac so thich
+    Dap an    : Thành viên còn có thể tự lập một chi nhánh của tổ chức tùy theo vị trí hoặc sở thích.
+    Mo hinh   : Thành viên còn có thể tự lập một chi nhánh của tổ chức, theo vị trí hoặc sở thích.
+
+[158] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hien nay to chuc co toi 90 chi nhanh tren toan the gioi
+    Dap an    : Hiện nay tổ chức có tới 90 chi nhánh trên toàn thế giới.
+    Mo hinh   : Hiện nay, tổ chức có tới 90 chi nhánh trên toàn thế giới.
+
+[159] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nhiem vu va muc dich hoat dong bao dam co vu cho su phat trien mo rong va su dung internet duoc thuan loi nhat cho moi nguoi tren toan the gioi
+    Dap an    : Nhiệm vụ và mục đích hoạt động Bảo đảm, cổ vũ cho sự phát triển, mở rộng và sử dụng Internet được thuận lợi nhất cho mọi người trên toàn thế giới.
+    Mo hinh   : Nhiệm vụ và mục đích hoạt động bảo đảm cơ vụ cho sự phát triển mở rộng và sử dụng internet được thuận lợi nhất cho mọi người trên toàn thế giới.
+
+[160] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng viet cung goi la tieng viet nam hay viet ngu la ngon ngu cua nguoi viet va la ngon ngu chinh thuc tai viet nam
+    Dap an    : Tiếng Việt, cũng gọi là tiếng Việt Nam hay Việt ngữ là ngôn ngữ của người Việt và là ngôn ngữ chính thức tại Việt Nam.
+    Mo hinh   : Tiếng Việt, cũng gọi là tiếng Việt Nam hay Việt ngữ, là ngôn ngữ của người Việt và là ngôn Ngữ chính thức tại Việt Nam.
+
+[161] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : day la tieng me de cua khoang 85% dan cu viet nam cung voi hon 4 trieu nguoi viet kieu
+    Dap an    : Đây là tiếng mẹ đẻ của khoảng 85% dân cư Việt Nam cùng với hơn 4 triệu người Việt kiều.
+    Mo hinh   : Đây là tiếng mẹ đẻ của khoảng 85% dân cư Việt Nam cùng với hơn 4 triệu người Việt kiểu.
+
+[162] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng viet con la ngon ngu thu hai cua cac dan toc thieu so tai viet nam va la ngon ngu dan toc thieu so duoc cong nhan tai cong hoa sec
+    Dap an    : Tiếng Việt còn là ngôn ngữ thứ hai của các dân tộc thiểu số tại Việt Nam và là ngôn ngữ dân tộc thiểu số được công nhận tại Cộng hòa Séc.
+    Mo hinh   : Tiếng Việt còn là Ngôn ngữ thứ hai của các dân tộc thiểu số tại Việt Nam và là ngôn ngữ dân tộc thiếu số được công nhận tại Công UNESCO.
+
+[163] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dua tren tu vung co ban tieng viet duoc phan loai la mot ngon ngu thuoc ngu he nam a
+    Dap an    : Dựa trên từ vựng cơ bản, tiếng Việt được phân loại là một ngôn ngữ thuộc ngữ hệ Nam Á.
+    Mo hinh   : Dựa trên từ vùng cơ bản, tiếng Việt được phân loại là một ngôn ngữ thuộc ngữ hệ Nam Á.
+
+[164] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vi viet nam thuoc vung van hoa dong a tieng viet cung chiu nhieu anh huong ve tu tieng han do vay la ngon ngu co it diem tuong dong nhat voi cac ngon ngu khac trong ngu he nam a
+    Dap an    : Vì Việt Nam thuộc Vùng văn hoá Đông Á, tiếng Việt cũng chịu nhiều ảnh hưởng về từ tiếng Hán, do vậy là ngôn ngữ có ít điểm tương đồng nhất với các ngôn ngữ khác trong ngữ hệ Nam Á.
+    Mo hinh   : Vì Việt Nam thuộc vùng văn hóa Đông Á, tiếng Việt cũng chịu nhiều ảnh hưởng về từ tiếng Hàn, do vậy là ngôn ngữ có ít điểm tương đồng nhất với các ngôn ngữ khác trong ngữ hệ Nam Á.
+
+[165] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : haudricourt giai thich tu nam 1954 nhom ngon ngu vietmuong o thoi ky khoang dau cong nguyen la nhung ngon ngu hay phuong ngu khong thanh dieu
+    Dap an    : Haudricourt giải thích từ năm 1954, nhóm ngôn ngữ Việt-Mường ở thời kỳ khoảng đầu Công nguyên là những ngôn ngữ hay phương ngữ không thanh điệu.
+    Mo hinh   : HUREDEE, giải thích từ năm 1954: 'Nhóm ngôn ngữ Việt-Mường ở thời kỳ khoảng đầu công nguyên là những ngôn ngữ hay phương ngữ không thành điều. '
+
+[166] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ve sau qua qua trinh giao thoa voi hoa ngu va nhat la voi cac ngu thuoc ngu he taikadai von co he thong thanh dieu phat trien cao hon he thong thanh dieu trong tieng viet xuat hien va co dien mao nhu ngay nay theo quy luat hinh thanh thanh dieu
+    Dap an    : Về sau, qua quá trình giao thoa với Hoa ngữ và nhất là với các ngữ thuộc ngữ hệ Tai-Kadai vốn có hệ thống thanh điệu phát triển cao hơn, hệ thống thanh điệu trong tiếng Việt xuất hiện và có diện mạo như ngày nay, theo quy luật hình thành thanh điệu.
+    Mo hinh   : Về sau, qua quá trình giao thoa với hóa ngữ và nhất là với các ngữ thuộc ngữ hệ tại địa phương, có hệ thống thành điều phát triển cao hơn. Hệ thống thanh điều trong tiếng Việt xuất hiện và có diện mạo như ngày nay theo quy luật hình thành thành điều.
+
+[167] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau do mot so phu am dau bien doi cho toi ngay nay
+    Dap an    : Sau đó một số phụ âm đầu biến đổi cho tới ngày nay.
+    Mo hinh   : Sau đó, một số phụ âm đầu biến đổi cho tôi ngày nay.
+
+[168] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong qua trinh bien doi cac phu am cuoi rung di lam thay doi cac ket thuc am tiet va phu am dau chuyen tu lan lon vo thanh voi huu thanh sang tach biet
+    Dap an    : Trong quá trình biến đổi, các phụ âm cuối rụng đi làm thay đổi các kết thúc âm tiết và phụ âm đầu chuyển từ lẫn lộn vô thanh với hữu thanh sang tách biệt.
+    Mo hinh   : Trong quá trình biến đổi các phụ âm cuối cùng, đi làm thay đổi các kết thúc âm tiết và phụ âm đầu chuyển từ lần lớn trở thành với hữu thành sáng tách biệt.
+
+[169] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truoc thoi phap thuoc tieng viet la ngon ngu dung trong sinh hoat giao tiep cua dan thuong tu khi lap nuoc
+    Dap an    : Trước thời Pháp thuộc Tiếng Việt là ngôn ngữ dùng trong sinh hoạt giao tiếp của dân thường từ khi lập nước.
+    Mo hinh   : Trước thời pháp thuộc tiếng Việt là ngôn ngữ đúng trong sinh hoạt giao tiếp của dân thường từ khi lập nước.
+
+[170] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giai doan tu dau cong nguyen tieng viet co nhung am khong co trong tieng trung
+    Dap an    : Giai đoạn từ đầu Công nguyên, tiếng Việt có những âm không có trong tiếng Trung.
+    Mo hinh   : Giai đoạn từ đầu, Công nguyên tiếng Việt có những âm không có trong tiếng Trung.
+
+[171] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tu khi tieng trung co anh huong toi viet nam thong qua cac con duong va bao gom cac giai doan khac nhau tieng viet bat dau co nhung am vay muon tu tieng trung
+    Dap an    : Từ khi tiếng Trung có ảnh hưởng tới Việt Nam thông qua các con đường và bao gồm các giai đoạn khác nhau, tiếng Việt bắt đầu có những âm vay mượn từ tiếng Trung.
+    Mo hinh   : Từ khi tiếng Trung có ảnh hưởng tới Việt Nam thông qua các con đường và bao gồm các giai đoạn khác nhau, tiếng Việt bắt đầu có những âm vay mượn từ tiếng Trung.
+
+[172] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu han co va tu han viet goi chung la tu goc han
+    Dap an    : Từ Hán cổ và từ Hán Việt gọi chung là từ gốc Hán.
+    Mo hinh   : Từ hạn có và từ hạn viết (gọi chung là từ gốc Hán).
+
+[173] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : 1 so tu ngu han co co the ke den nhu dau gan ghe ong ba co che nga chen chem chim buong buon buom mui mua
+    Dap an    : 1 số từ ngữ Hán cổ có thể kể đến như "đầu", "gan", "ghế", "ông", "bà", "cô", "chè", "ngà", "chén", "chém", "chìm", "buồng", "buồn", "buồm", "mùi", "mùa"...
+    Mo hinh   : 1, số từ ngữ Hán có thể kể đến như: Đầu gần, ghé ông bà, có chế nga chen, chem, chim buồn, bướm muối mưa.
+
+[174] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu han co la nhung tu goc han du nhap vao tieng viet tu lau hon da dong hoa manh hon nen nhung tu nay hien nay la tu thong thuong trong hoat dong xa hoi doi voi nguoi viet
+    Dap an    : Từ Hán cổ là những từ gốc Hán du nhập vào tiếng Việt từ lâu hơn, đã đồng hoá mạnh hơn, nên những từ này hiện nay là từ thông thường trong hoạt động xã hội đối với người Việt.
+    Mo hinh   : Tự hào có là những từ gốc Hàn dự nhập vào tiếng Việt từ lâu hơn, đã đồng hóa mạnh hơn, nên những từ này hiện nay là từ thông thường trong hoạt động xã hội đối với người Việt.
+
+[175] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hien nay co 1945 chu han thong dung trong tieng nhat cung co khoang 2000 tu han–han thong dung
+    Dap an    : Hiện nay có 1945 chữ Hán thông dụng trong tiếng Nhật, cũng có khoảng 2000 từ Hán–Hàn thông dụng.
+    Mo hinh   : Hiện nay, có 1945 chủ hạn thông dụng trong tiếng Nhật, cũng có khoảng 2000 từ hạn–hạn thông dụng.
+
+[176] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : so luong tu vung tieng viet co them hang loat cac yeu to han–viet
+    Dap an    : Số lượng từ vựng tiếng Việt có thêm hàng loạt các yếu tố Hán–Việt.
+    Mo hinh   : Số lượng từ vùng tiếng Việt có thêm hàng loạt các yếu tố Hàn – Việt.
+
+[177] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nhu la chu o tam minh duc thien tu do
+    Dap an    : Như là "chủ", "ở", "tâm", "minh", "đức", "thiên", "tự do",...
+    Mo hinh   : Như là chữ ở tâm mình, Đức Thiện tự do.
+
+[178] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mat khac nguoi trung quoc goi la thai son hoang ha co thu
+    Dap an    : Mặt khác, người Trung Quốc gọi là Thái Sơn, Hoàng Hà, cổ thụ...
+    Mo hinh   : Mặt khác, người Trung Quốc, gọi là Thái Sơn Hoàng Hà, có thư.
+
+[179] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac tu va tu to han viet tao ra cac tu ngu moi cho tieng viet nhu si dien phi cong bao gom song dong sinh de van van
+    Dap an    : Các từ và từ tố Hán Việt tạo ra các từ ngữ mới cho tiếng Việt như sĩ diện, phi công, bao gồm, sống động, sinh đẻ, vân vân.
+    Mo hinh   : Các từ và từ tổ hợp viết tạo ra các từ ngữ mới cho tiếng Việt như: sĩ diện phi công, bao gồm sống động sinh đề, vấn văn.
+
+[180] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng viet da loi dung duoc nhung thanh tuu ngon ngu trong tieng han de tu cai tien minh
+    Dap an    : Tiếng Việt đã lợi dụng được những thành tựu ngôn ngữ trong tiếng Hán để tự cải tiến mình.
+    Mo hinh   : Tiếng Việt đã lợi dụng được những thành tựu ngôn ngữ trong tiếng Hàn để tự cải tiến mình.
+
+[181] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cung thoi gian nay ai do xay rieng 1 he thong chu viet cho nguoi viet theo nguyen tac ghi am tiet phat trien do la chu nom
+    Dap an    : Cùng thời gian này, ai đó xây riêng 1 hệ thống chữ viết cho người Việt theo nguyên tắc ghi âm tiết phát triển, đó là chữ Nôm.
+    Mo hinh   : Cùng thời gian này, ai đó xây riêng 1 hệ thống chữ viết cho người viết (theo nguyên tắc ghi âm tiết phát triển), đó là chủ trương.
+
+[182] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tam thien tu giai am chi luoc day 3000 chu han nom thong thuong dap ung nhu cau can thiet nho chu nho nghia tung chu moi cau 4 chu
+    Dap an    : Tam thiên tự giải âm chỉ lược dạy 3000 chữ Hán, Nôm thông thường, đáp ứng nhu cầu cần thiết, nhớ chữ, nhớ nghĩa từng chữ, mỗi câu 4 chữ.
+    Mo hinh   : Tạm thiện từ giải âm chỉ lứa đầy 3000 chữ Hán. Môi thông thường đáp ứng nhu cầu cần thiết nhờ chữ nhỏ nghĩa từng chữ (mỗi câu 4 chữ).
+
+[183] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng thu 4 cau dau hiep voi tieng thu hai cau duoi roi cu the mai den 3000 chu 750 cau
+    Dap an    : Tiếng thứ 4 câu đầu hiệp với tiếng thứ hai câu dưới rồi cứ thế mãi đến 3000 chữ, 750 câu.
+    Mo hinh   : Tiếng thứ 4 (cấu đầu) hợp với tiếng thứ hai (cầu dưới), rồi cụ thể: Mãi đến 3000 chữ, 250 câu.
+
+[184] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thoi phap thuoc tu khi phap xam luoc viet nam vao nua cuoi the ky thu xix tieng phap dan thay the vi tri cua co van tro thanh ngon ngu chinh thuc trong giao duc hanh chinh va ngoai giao
+    Dap an    : Thời Pháp thuộc Từ khi Pháp xâm lược Việt Nam vào nửa cuối thế kỷ thứ XIX, tiếng Pháp dần thay thế vị trí của cổ văn, trở thành ngôn ngữ chính thức trong giáo dục, hành chính và ngoại giao.
+    Mo hinh   : Thời pháp thuộc từ khi Pháp xâm lược Việt Nam vào nửa cuối thế kỷ XX. Tiếng Pháp dần thay thế vị trí của cố vấn trở thành ngôn ngữ chính thức trong giáo dục, hành chính và ngoại giao.
+
+[185] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gia dinh bao la to bao dau tien ma phat hanh bang chu quoc ngu tai nam ky vao nam 1865 dat nen mong cho su phat trien va xu huong cua chu quoc ngu nhu la chu viet chinh cua tieng viet sau nay
+    Dap an    : Gia Định báo là tờ báo đầu tiên mà phát hành bằng chữ Quốc ngữ tại Nam Kỳ vào năm 1865, đặt nền móng cho sự phát triển và xu hướng của chữ Quốc ngữ như là chữ viết chính của tiếng Việt sau này.
+    Mo hinh   : Gia đình báo là tờ báo đầu tiên mà phát hành bằng chữ quốc ngữ tại năm ký, vào năm 1886, đặt nền tảng cho sự phát triển và xu hướng của chủ quốc ngữ như là chủ viết chính của tiếng Việt sau này.
+
+[186] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mat khac nhung khai niem chinh tri xa hoi ky thuat moi dan den viec nhap cac thuat ngu tu ngu moi
+    Dap an    : Mặt khác, những khái niệm chính trị xã hội, kỹ thuật mới dẫn đến việc nhập các thuật ngữ, từ ngữ mới.
+    Mo hinh   : Mặt khác, những khái niệm chính trị - xã hội kỹ thuật mới dẫn đến việc nhập các thuật ngữ từ ngữ mới.
+
+[187] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau nam 1945 tieng viet thay the hoan toan tieng phap va van ngon tro thanh ngon ngu lam viec cap quoc gia duy nhat cua viet nam dan chu cong hoa
+    Dap an    : Sau năm 1945 Tiếng Việt thay thế hoàn toàn tiếng Pháp và văn ngôn, trở thành ngôn ngữ làm việc cấp quốc gia duy nhất của Việt Nam Dân chủ Cộng hoà.
+    Mo hinh   : Sau năm 1945, tiếng Việt thay thế hoàn toàn tiếng Pháp và văn ngôn trở thành ngôn ngữ làm việc cấp quốc gia duy nhất của Việt Nam Dân chủ Cộng.
+
+[188] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong thoi ky chien tranh viet nam su phat trien tieng viet trong chinh the viet nam dan chu cong hoa o mien bac va viet nam cong hoa o mien nam dien ra co khac nhau chu yeu o su dung tu hanviet va phien am ten trong tieng nuoc ngoai
+    Dap an    : Trong thời kỳ chiến tranh Việt Nam, sự phát triển tiếng Việt trong chính thể Việt Nam Dân chủ Cộng hòa ở miền Bắc và Việt Nam Cộng hòa ở miền Nam diễn ra có khác nhau, chủ yếu ở sử dụng từ Hán-Việt và phiên âm tên trong tiếng nước ngoài.
+    Mo hinh   : Trong thời kỳ chiến tranh Việt Nam, sự phát triển tiếng Việt trong chính thế Việt Nam dân chủ cộng ở miền Bắc và Việt Nam công hóa ở miền Nam diễn ra có khác nhau, chủ yếu ở sử dụng từ Hán-Việt và phiên âm tên trong tiếng nước ngoài.
+
+[189] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguoc lai o mien bac lai dung mot so danh tu bat nguon tu tieng han nhu tham quan su co nhat tri dang ky dot xuat vo tu
+    Dap an    : Ngược lại ở miền Bắc lại dùng một số danh từ bắt nguồn từ tiếng Hán như "tham quan", "sự cố", "nhất trí", "đăng ký", "đột xuất", "vô tư",...
+    Mo hinh   : Ngược lại, ở miền Bắc lại dùng một số danh từ bắt nguồn từ tiếng Hàn, như tham quan sự có nhất trí đăng ký đột xuất vô tư.
+
+[190] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thi mien nam lai dung nhung chu tham vieng tro ngaitruc trac dong long ghi ten bat ngo thoai mai
+    Dap an    : thì miền Nam lại dùng những chữ "thăm viếng", "trở ngại/trục trặc", "đồng lòng", "ghi tên", "bất ngờ", "thoải mái",...
+    Mo hinh   : Thị miền Nam lại dùng những chủ tham viên cho 'Ngôi trí tuệ', đồng lòng ghi tên bất ngờ, thoải mái.
+
+[191] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau khi viet nam thong nhat vao nam 1975 quan he bacnam da ket noi lai
+    Dap an    : Sau khi Việt Nam thống nhất vào năm 1975, quan hệ Bắc-Nam đã kết nối lại.
+    Mo hinh   : Sau khi Việt Nam thống nhất vào năm 1975, quan hệ Bắc Nam đã kết nối lại.
+
+[192] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gan day su pho bien hon cua cac phuong tien truyen thanh va truyen hinh tren toan quoc gop phan chuan hoa tieng viet ve chinh ta va am dieu
+    Dap an    : Gần đây, sự phổ biến hơn của các phương tiện truyền thanh và truyền hình trên toàn quốc góp phần chuẩn hóa tiếng Việt về chính tả và âm điệu.
+    Mo hinh   : Gần đây, sự phổ biến hơn của các phương tiện truyền thanh và truyền hình trên toàn quốc góp phần chuẩn hóa tiếng Việt về chính tả và âm điều.
+
+[193] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu han viet va tu thuan viet duoc nguoi viet su dung song song tuy thuoc ngu canh hay van phong
+    Dap an    : Từ Hán Việt và từ thuần Việt được người Việt sử dụng song song tùy thuộc ngữ cảnh hay văn phong.
+    Mo hinh   : Từ Hán Việt và từ Thuận Việt được người viết sử dụng song song, thuộc ngữ cảnh hay văn phòng.
+
+[194] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : su di cu de hoc tap va lam viec giua cac vung mien giup moi nguoi o viet nam duoc tiep xuc va hieu nhieu hon voi cac phuong ngu tieng viet
+    Dap an    : Sự di cư để học tập và làm việc giữa các vùng miền giúp mọi người ở Việt Nam được tiếp xúc và hiểu nhiều hơn với các phương ngữ tiếng Việt.
+    Mo hinh   : Sự di cư để học tập và làm việc giữa các vùng miền giúp mọi người ở Việt Nam được tiếp xúc và hiểu nhiều hơn với các phương ngữ tiếng Việt.
+
+[195] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phan bo theo ethnologue tieng viet co tai anh ba lan campuchia cote divoire duc ha lan lao na uy nouvellecaledonie phan lan phap philippines cong hoa sec senegal thai lan vanuatu dai loan nga
+    Dap an    : Phân bố Theo Ethnologue, tiếng Việt có tại Anh, Ba Lan, Campuchia, Côte d'Ivoire, Đức, Hà Lan, Lào, Na Uy, Nouvelle-Calédonie, Phần Lan, Pháp, Philippines, Cộng hòa Séc, Sénégal, Thái Lan, Vanuatu, Đài Loan, Nga...
+    Mo hinh   : Phân bố theo Ethnology: Tiếng Việt có tại Anh, Ba Lan, Campuchia, Cote Dille, Đức, Hà Lan, Lào, Na Uy, Pháp, Phần Lan, Philippines, Cộng, Colombia, Thái Lan, Đài Loan, Nga.
+
+[196] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng viet la ngon ngu dan toc thieu so tai cong hoa sec vi nguoi viet duoc cong nhan la dan toc thieu so tai sec
+    Dap an    : Tiếng Việt là ngôn ngữ dân tộc thiểu số tại Cộng hòa Séc vì người Việt được công nhận là "dân tộc thiểu số" tại Séc.
+    Mo hinh   : Tiếng Việt là ngôn ngữ dân tộc thiểu số tại Công (Scopus), vì người Việt được công nhận là dân tộc thiếu số tại STEM.
+
+[197] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phuong ngu tieng viet co su thay doi trong giong noi tu bac vao nam khong dot ngot ma tiem tien dan theo tung vung lien nhau
+    Dap an    : Phương ngữ Tiếng Việt có sự thay đổi trong giọng nói từ Bắc vào Nam, không đột ngột mà tiệm tiến dần theo từng vùng liền nhau.
+    Mo hinh   : Phương ngữ tiếng Việt có sự thay đổi trong giọng nói từ Bắc vào Nam, không đột ngột mà tiên tiến, dẫn theo từng vùng liên nhau.
+
+[198] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nhung tieng dia phuong nay khac nhau o giong dieu va tu dia phuong
+    Dap an    : Những tiếng địa phương này khác nhau ở giọng điệu và từ địa phương.
+    Mo hinh   : Những tiếng địa phương này khác nhau ở giống điều và từ địa phương.
+
+[199] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thanh nga va thanh hoi o mien bac ro hon o mien nam va trung
+    Dap an    : Thanh ngã và thanh hỏi ở miền Bắc rõ hơn ở miền Nam và Trung.
+    Mo hinh   : Thành nga và thành hội ở miền Bắc, rõ hơn ở miền Nam và Trung.
+
+[200] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giong hue co nhieu tu vung dia phuong hon nhung giong khac
+    Dap an    : Giọng Huế có nhiều từ vựng địa phương hơn những giọng khác.
+    Mo hinh   : Giống Huế có nhiều từ vùng địa phương hơn những giống khác.
+
+[201] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : theo trang thong tin cua dai su quan viet nam tai trung quoc va hoc gia laurence thompson thi cach doc tieu chuan hien nay dua vao giong ha noi
+    Dap an    : Theo trang thông tin của Đại sứ quán Việt Nam tại Trung Quốc và học giả Laurence Thompson thì cách đọc tiêu chuẩn hiện nay dựa vào giọng Hà Nội.
+    Mo hinh   : Theo trang thông tin của Đại sứ quán Việt Nam tại Trung Quốc và Học giả Laurence Steven, thì cách đọc tiêu chuẩn hiện nay dựa vào giống Hà Nội.
+
+[202] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tuy nhien chua co quy dinh nao noi rang giong ha noi la chuan quoc gia
+    Dap an    : Tuy nhiên, chưa có quy định nào nói rằng giọng Hà Nội là chuẩn quốc gia.
+    Mo hinh   : Tuy nhiên, chưa có quy định nào nói rằng giống Hà Nội là chuẩn quốc gia.
+
+[203] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngu am nguyen am duoi day la bang cac nguyen am theo giong ha noi
+    Dap an    : Ngữ âm Nguyên âm Dưới đây là bảng các nguyên âm theo giọng Hà Nội.
+    Mo hinh   : Ngữ âm, nguyên âm dưới đây là bằng các nguyên âm theo giống Hà Nội.
+
+[204] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong bang tren cac nguyen am truoc giua va nguyen am mo la nguyen am khong tron moi con lai la nguyen am tron moi
+    Dap an    : Trong bảng trên, các nguyên âm trước, giữa và nguyên âm mở là nguyên âm không tròn môi, còn lại là nguyên âm tròn môi.
+    Mo hinh   : Trong bảng trên, các Nguyễn Âm trước (giữa) và Nguyễn Âm mở (là Nguyễn Âm không trọn mới, còn lại là Nguyễn Âm trọn mới).
+
+[205] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : a va a la dang ngan cua a va o
+    Dap an    : Ă và â là dạng ngắn của a và ơ.
+    Mo hinh   : A và A là dạng ngắn của A và O.
+
+[206] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dong thoi tieng viet con co he thong nguyen am doi va nguyen am ba
+    Dap an    : Đồng thời, tiếng Việt còn có hệ thống nguyên âm đôi và nguyên âm ba.
+    Mo hinh   : Đồng thời, tiếng Việt còn có hệ thống Nguyễn Âm Đội và Nguyễn Âm Ba.
+
+[207] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phu am bang duoi day trinh bay cac phu am trong tieng viet va cach viet
+    Dap an    : Phụ âm Bảng dưới đây trình bày các phụ âm trong tiếng Việt và cách viết.
+    Mo hinh   : Phụ âm bằng dưới đây trình bày các phụ âm trong tiếng Việt và cách viết.
+
+[208] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thuong | p | t | tr | ch | ckq | |
+    Dap an    : thường | p | t | tr | ch | c/k/q | |- !
+    Mo hinh   : Thuong | P. | T. }}, Tr | CH | KQ | |.
+
+[209] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thanh hau hoa | b | d | | | | |
+    Dap an    : thanh hầu hóa | b | đ | | | | |- !
+    Mo hinh   : Thanh Hậu,: | B. | D. }}, | |.
+
+[210] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vo thanh | ph | x | s | | h |
+    Dap an    : vô thanh | ph | x | s | | h |- !
+    Mo hinh   : Võ Thanh | P. |, X. -|, S. @, | H. }}
+
+[211] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dong thoi cac phu am co thay doi tuy theo dia phuong
+    Dap an    : Đồng thời, các phụ âm có thay đổi tuỳ theo địa phương.
+    Mo hinh   : Đồng thời, các phụ âm có thay đổi theo địa phương.
+
+[212] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : su khac biet ve phu am giua cac vung mien trinh bay ky cang hon trong bai phuong ngu tieng viet
+    Dap an    : Sự khác biệt về phụ âm giữa các vùng miền trình bày kỹ càng hơn trong bài phương ngữ tiếng Việt.
+    Mo hinh   : Sự khác biệt về phụ âm giữa các vùng miền trình bày kỹ càng hơn trong bài phương ngữ tiếng Việt.
+
+[213] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thanh dieu tieng viet la ngon ngu thanh dieu moi am tiet cua tieng viet luon mang 1 thanh dieu nao do
+    Dap an    : Thanh điệu Tiếng Việt là ngôn ngữ thanh điệu, mọi âm tiết của tiếng Việt luôn mang 1 thanh điệu nào đó.
+    Mo hinh   : Thành điều tiếng Việt là ngôn ngữ thành điều mới mẻ. Âm tiết của tiếng Việt luôn mang 1 thành điều nào đó.
+
+[214] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : do cac thanh dieu cua tieng viet trong chu quoc ngu bieu thi bang cac dau thanh con goi la dau nen mot so nguoi quen goi cac thanh dieu cua tieng viet la cac dau
+    Dap an    : Do các thanh điệu của tiếng Việt trong chữ quốc ngữ biểu thị bằng các dấu thanh còn gọi là dấu nên một số người quen gọi các thanh điệu của tiếng Việt là các "dấu".
+    Mo hinh   : Do các thành điều của tiếng Việt trong chữ Quốc ngữ biểu thị bằng các dấu thành (còn gọi là dấu), nên một số người quen gọi các thành điểm của tiếng viết là các dấu.
+
+[215] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : co su khac biet ve so luong thanh dieu va dieu tri cua thanh dieu giua cac phuong ngon cua tieng viet thanh dieu co ten goi giong nhau khong dong nghia voi viec noi chung se giong nhau trong moi phuong ngon cua tieng viet
+    Dap an    : Có sự khác biệt về số lượng thanh điệu và điệu trị của thanh điệu giữa các phương ngôn của tiếng Việt, thanh điệu có tên gọi giống nhau không đồng nghĩa với việc nói chúng sẽ giống nhau trong mọi phương ngôn của tiếng Việt.
+    Mo hinh   : Có sự khác biệt về số lượng, thành điều và điều trị của thành điều giữa các phương ngôn của tiếng Việt thành điều có tên gọi giống nhau, không đồng nghĩa với việc nói chung sẽ giống nhau trong mọi phương ngon của Tiếng Việt.
+
+[216] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phuong ngon tieng viet bac bo co 6 thanh dieu phuong ngon tieng viet trung bo va nam bo co 5 thanh dieu
+    Dap an    : Phương ngôn tiếng Việt Bắc Bộ có 6 thanh điệu, phương ngôn tiếng Việt Trung Bộ và Nam Bộ có 5 thanh điệu.
+    Mo hinh   : Phương ngôn tiếng Việt Bắc bộ có 6 thành điều, phương ngôn tiếng viết Trung bộ và Nam bộ có 5 thành điều.
+
+[217] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : 3 am tac tren da lam cho cac am tiet mang van nhap thanh chi co the mang cac thanh dieu co dieu tri ngan va nhanh
+    Dap an    : 3 âm tắc trên đã làm cho các âm tiết mang vần nhập thanh chỉ có thể mang các thanh điệu có điệu trị ngắn và nhanh.
+    Mo hinh   : 3. Âm tác trên da làm cho các âm tiết mang văn nhập thành chỉ có thể mang các thành điều có điều trị ngắn và nhanh.
+
+[218] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong tho ca cac thanh dieu phan thanh 2 nhom thanh bang gom co ngang va huyen thanh trac gom cac thanh con lai
+    Dap an    : Trong thơ ca các thanh điệu phân thành 2 nhóm: thanh bằng gồm có ngang và huyền, thanh trắc gồm các thanh còn lại.
+    Mo hinh   : Trong tất cả các thành điều, phân thành 2 nhóm thành bằng gồm Cờ ngang và Huyến thành, trắc gồm các thành con lại.
+
+[219] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong cac the tho co nhu duong luat va luc bat co the co su hoa hop thanh dieu bang trac giua cac tieng trong 1 cau tho
+    Dap an    : Trong các thể thơ cổ như Đường luật và lục bát, có thể có sự hòa hợp thanh điệu bằng trắc giữa các tiếng trong 1 câu thơ.
+    Mo hinh   : Trong các thể thống có như đường luật và lúc bắt, có thể có sự hợp thành điều bằng trắc giữa các tiếng trong 1 câu thơ.
+
+[220] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngu phap tieng viet la 1 ngon ngu don lap
+    Dap an    : Ngữ pháp Tiếng Việt là 1 ngôn ngữ đơn lập.
+    Mo hinh   : Ngữ pháp tiếng Việt là 1, ngôn ngữ đơn lập.
+
+[221] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac quan he ngu phap the hien chu yeu thong qua he thong hu tu va cach sap xep trat tu tu trong cau
+    Dap an    : Các quan hệ ngữ pháp thể hiện chủ yếu thông qua hệ thống hư từ và cách sắp xếp trật tự từ trong câu.
+    Mo hinh   : Các quan hệ ngữ pháp thể hiện chủ yếu thông qua hệ thống hỗ trợ và cách sắp xếp trật tự từ trong câu.
+
+[222] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vi tri cac tu sap xep theo thu tu tu mang y chinh dung truoc tu mang y phu dung sau bo sung nghia cho tu mang y chinh tuong tu nhu danh tu dung truoc tinh tu dung sau bo sung nghia cho danh tu
+    Dap an    : Vị trí các từ sắp xếp theo thứ tự, từ mang ý chính đứng trước từ mang ý phụ đứng sau bổ sung nghĩa cho từ mang ý chính, tương tự như danh từ đứng trước tính từ đứng sau bổ sung nghĩa cho danh từ.
+    Mo hinh   : Vị trí các từ sắp xếp theo thứ tự từ mang ý chính (đứng trước từ mạng ý phụ, đứng sau bộ sung nghĩa cho từ mạng y chính, tương tự như đánh từ đúng trước tính từ đúng), sau bổ sung Nghĩa cho đánh từ.
+
+[223] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tieng viet con co he thong dai tu nhan xung dua tren cac tu ngu chi quan he xa hoi va he thong danh tu don vi
+    Dap an    : Tiếng Việt còn có hệ thống đại từ nhân xưng dựa trên các từ ngữ chỉ quan hệ xã hội và hệ thống danh từ đơn vị.
+    Mo hinh   : Tiếng Việt còn có hệ thống đại từ nhân xung dựa trên các từ ngữ, chỉ quan hệ xã hội và hệ thống danh từ đơn vị.
+
+[224] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu vung tu vung tieng viet co 2 bo phan chinh tu thuan viet va tu muon
+    Dap an    : Từ vựng Từ vựng tiếng Việt có 2 bộ phận chính: từ thuần Việt và từ mượn.
+    Mo hinh   : Từ vững, từ vững tiếng Việt có 2 bộ phận chính: tự thuận viết và tự muốn.
+
+[225] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngoai ra con co nhung tu hon chung la ket qua cua su ket hop cac yeu to thuan viet va ngoai lai
+    Dap an    : Ngoài ra còn có những từ hỗn chủng là kết quả của sự kết hợp các yếu tố thuần Việt và ngoại lai.
+    Mo hinh   : Ngoài ra, còn có những từ hơn chung là kết quả của sự kết hợp các yếu tố thuận Việt và ngoài lại.
+
+[226] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu thuan viet tu thuan viet la nhung tu xuat hien lau hon trong tieng viet bieu thi nhung su vat hien tuong khai niem co ban nhat trong doi song hang ngay
+    Dap an    : Từ thuần Việt Từ thuần Việt là những từ xuất hiện lâu hơn trong tiếng Việt, biểu thị những sự vật, hiện tượng, khái niệm cơ bản nhất trong đời sống hằng ngày.
+    Mo hinh   : Tự thuận viết, tự thuận viết là những tự xuất hiện lâu hơn trong tiếng Việt. Biểu thị những sự vật hiện tượng khái niệm cơ bản nhất trong đời sống hàng ngày.
+
+[227] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : do co su tiep xuc tu som hon voi cac ngon ngu nhom taythai nen nhieu tu thuan viet va cac tu tuong ung trong cac tieng nay co su giong nhau nhat dinh ve ngu am va ngu nghia
+    Dap an    : Do có sự tiếp xúc từ sớm hơn với các ngôn ngữ nhóm Tày-Thái nên nhiều từ thuần Việt và các từ tương ứng trong các tiếng này có sự giống nhau nhất định về ngữ âm và ngữ nghĩa.
+    Mo hinh   : Do có sự tiếp xúc từ sớm hơn với các ngôn ngữ nhóm Tây-Thái, nên nhiều từ thuận viết và các từ tương ứng trong các tiếng này có sự giống nhau nhất định về ngữ âm và ngữ nghĩa.
+
+[228] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truoc 1960 mot so tu thuan viet dung de dat ten thong tuc cho nguoi trong tang lop binh dan hoac de tranh bi ma quy than thanh bat di
+    Dap an    : Trước 1960, một số từ thuần Việt dùng để đặt tên thông tục cho người trong tầng lớp bình dân hoặc để tránh bị ma quỷ thần thánh bắt đi.
+    Mo hinh   : Trước 1960, một số từ thuận viết đúng để đặt tên thông tục cho người trong tăng lớp, bình dân hoặc để tránh bị mà quy thân thành bất đi.
+
+[229] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai mien bac co cac ten nhu rut tam cot cu gai
+    Dap an    : Tại miền Bắc có các tên như "Rụt", "Tằm", "Cột", "Cu", "Gái",...
+    Mo hinh   : Tại miền Bắc, có các tên như: Rực, Tam Cốc, Cờ gai.
+
+[230] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai mien nam co cac ten nhu duc
+    Dap an    : Tại miền Nam có các tên như "Đực",...
+    Mo hinh   : Tại miền Nam, có các tên như Đức.
+
+[231] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : su phat trien dan tri dan den cach dat ten thong tuc giam dan
+    Dap an    : Sự phát triển dân trí dẫn đến cách đặt tên thông tục giảm dần.
+    Mo hinh   : Sự phát triển dân trí dẫn đến cách đặt tên thông tục, giảm dần.
+
+[232] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu han viet su tiep xuc giua tieng viet va tieng han bat dau khi nha han cua trung quoc xam chiem khu vuc viet nam
+    Dap an    : Từ Hán Việt Sự tiếp xúc giữa tiếng Việt và tiếng Hán bắt đầu khi nhà Hán của Trung Quốc xâm chiếm khu vực Việt Nam.
+    Mo hinh   : Từ Hàn Việt, sự tiếp xúc giữa tiếng Việt và tiếng Hàn bắt đầu khi nhà hàng của Trung Quốc xâm chiếm khu vực Việt Nam.
+
+[233] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : qua trinh tiep xuc da dua vao tieng viet mot khoi luong tu ngu cua tieng han
+    Dap an    : Quá trình tiếp xúc đã đưa vào tiếng Việt một khối lượng từ ngữ của tiếng Hán.
+    Mo hinh   : Quá trình tiếp xúc đã đưa vào tiếng Việt một khối lượng từ ngữ của tiếng Hàn.
+
+[234] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giai doan dau hien tuong nay dien ra le te roi rac hon chu yeu thong qua duong khau ngu qua su tiep xuc giua nguoi viet va nguoi han tao nen 1 lop tu co nguon goc han co ma da hoa lan voi cac tu thuan viet
+    Dap an    : Giai đoạn đầu, hiện tượng này diễn ra lẻ tẻ, rời rạc hơn chủ yếu thông qua đường khẩu ngữ qua sự tiếp xúc giữa người Việt và người Hán, tạo nên 1 lớp từ có nguồn gốc Hán cổ mà đã hoà lẫn với các từ thuần Việt.
+    Mo hinh   : Giai đoạn đầu hiện tượng này diễn ra 'lề tế' rõ rệt hơn chủ yếu thông qua đường khẩu ngữ, qua sự tiếp xúc giữa người Việt và người Hàn, tạo nên 1 lớp từ có nguồn gốc Hàn có mã đã lẫn với các từ thuận Việt.
+
+[235] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : den doi duong tieng viet moi co su tiep nhan cac tu ngu han mot cach co he thong qua duong sach vo
+    Dap an    : Đến đời Đường, tiếng Việt mới có sự tiếp nhận các từ ngữ Hán một cách có hệ thống qua đường sách vở.
+    Mo hinh   : Đến đời, đường tiếng Việt mới có sự tiếp nhận các từ ngữ Hàn một cách có hệ thống qua đường sách vô.
+
+[236] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac tu ngu goc han nay chu yeu doc theo ngu am doi duong tuan thu nguyen tac ngu am tieng viet goi la am han–viet
+    Dap an    : Các từ ngữ gốc Hán này chủ yếu đọc theo ngữ âm đời Đường tuân thủ nguyên tắc ngữ âm tiếng Việt gọi là âm Hán–Việt.
+    Mo hinh   : Các từ ngữ gốc Hán này chủ yếu đọc theo ngữ âm đối tượng tuân thủ nguyên tắc ngữ âm tiếng Việt (gọi là âm Hán – Việt).
+
+[237] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khi dua vao tieng viet ben canh viec thay doi ve mat ngu am mot so tu han viet thay doi ca ngu nghia
+    Dap an    : Khi đưa vào tiếng Việt, bên cạnh việc thay đổi về mặt ngữ âm, một số từ Hán Việt thay đổi cả ngữ nghĩa.
+    Mo hinh   : Khi đưa vào tiếng Việt, bên cạnh việc thay đổi về mặt ngữ âm, một số từ hạn Việt thay đổi cả ngữ nghĩa.
+
+[238] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu hanviet chiem 1 phan trong von tu vung tieng viet chung hien dien mot so linh vuc cua doi song xa hoi
+    Dap an    : Từ Hán-Việt chiếm 1 phần trong vốn từ vựng tiếng Việt, chúng hiện diện một số lĩnh vực của đời sống xã hội.
+    Mo hinh   : Từ Hàn/Việt chiếm 1 phần trong vốn từ vững tiếng Việt, chúng hiện diện một số lĩnh vực của đời sống xã hội.
+
+[239] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu co nguon goc an–au ke tu khi viet nam tro thanh thuoc dia cua phap tieng phap da co anh huong den tieng viet va cac tu ngu goc phap tham nhap vao tieng viet
+    Dap an    : Từ có nguồn gốc Ấn–Âu Kể từ khi Việt Nam trở thành thuộc địa của Pháp, tiếng Pháp đã có ảnh hưởng đến tiếng Việt và các từ ngữ gốc Pháp thâm nhập vào tiếng Việt.
+    Mo hinh   : Từ có nguồn gốc Ấn– Âu, kể từ khi Việt Nam trở thành thuộc địa của Pháp, tiếng Pháp đã có ảnh hưởng đến tiếng Việt và các từ ngữ gốc Pháp tham nhập vào tiếng Việt.
+
+[240] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : su anh huong nay la do tieng phap co su dung trong cac van ban giay to cua nha nuoc va trong giang day o nha truong cung nhu trong cac loai sach bao khac
+    Dap an    : Sự ảnh hưởng này là do tiếng Pháp có sử dụng trong các văn bản, giấy tờ của Nhà nước và trong giảng dạy ở nhà trường cũng như trong các loại sách báo khác.
+    Mo hinh   : Sự ảnh hưởng này là do tiếng Pháp có sử dụng trong các văn bản, giấy tờ của Nhà nước và trong giảng dạy ở nhà trường cũng như trong các loại sách báo khác.
+
+[241] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : anh huong nay keo theo su xuat hien cua cac tu goc phap trong cac linh vuc khac nhau dac biet la trong khoa hoc ky thuat
+    Dap an    : Ảnh hưởng này kéo theo sự xuất hiện của các từ gốc Pháp trong các lĩnh vực khác nhau đặc biệt là trong khoa học kỹ thuật.
+    Mo hinh   : Ảnh hưởng này kéo theo sự xuất hiện của các từ gốc Pháp trong các lĩnh vực khác nhau, đặc biệt là trong khoa học kỹ thuật.
+
+[242] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong thoi ky chien tranh viet nam mien bac viet nam chiu anh huong cua lien xo
+    Dap an    : Trong thời kỳ Chiến tranh Việt Nam, miền Bắc Việt Nam chịu ảnh hưởng của Liên Xô.
+    Mo hinh   : Trong thời kỳ chiến tranh Việt Nam, miền Bắc Việt Nam chịu ảnh hưởng của Liên Xô.
+
+[243] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : do do mot so tu ngu goc nga co dieu kien du nhap vao tieng viet
+    Dap an    : Do đó, một số từ ngữ gốc Nga có điều kiện du nhập vào tiếng Việt.
+    Mo hinh   : Do đó, một số từ ngữ gốc Nga có điều kiện dự nhập vào tiếng Việt.
+
+[244] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dong thoi cung voi su tiep xuc hoi nhap sau rong hon voi the gioi trong tieng viet cung xuat hien cac tu ngu co nguon goc tu tieng anh
+    Dap an    : Đồng thời, cùng với sự tiếp xúc, hội nhập sâu rộng hơn với thế giới, trong tiếng Việt cũng xuất hiện các từ ngữ có nguồn gốc từ tiếng Anh.
+    Mo hinh   : Đồng thời, cùng với sự tiếp xúc hội nhập sâu rộng hơn với thế giới trong tiếng Việt, cũng xuất hiện các từ ngữ có nguồn gốc từ tiếng Anh.
+
+[245] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong khi do nhung tu co 2 am tiet tro len vay muon thong qua sach vo van con dau an ngoai lai
+    Dap an    : Trong khi đó, những từ có 2 âm tiết trở lên, vay mượn thông qua sách vở vẫn còn dấu ấn ngoại lai.
+    Mo hinh   : Trong khi đó, những từ có 2 âm tiết trở lên. Vậy, muốn thông qua sách vô vàn dấu ấn ngoài lại.
+
+[246] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : co nhung tu vay muon nguyen dang nen tao anh huong trong cach phat am
+    Dap an    : Có những từ vay mượn nguyên dạng nên tạo ảnh hưởng trong cách phát âm.
+    Mo hinh   : Có những từ vay muốn nguyên dạng, nên tạo ảnh hưởng trong cách phát âm.
+
+[247] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu co nguon goc tieng dan toc thieu so la 1 nuoc da sac toc voi 54 dan toc da cong nhan tieng viet pho thong tiep nhan 1 phan tieng dan toc thieu so gom tu thong dung va ten rieng cua nguoi hay dia vat va cac tu nay co the co van phi viet
+    Dap an    : Từ có nguồn gốc tiếng dân tộc thiểu số Là 1 nước đa sắc tộc với 54 dân tộc đã công nhận, tiếng Việt phổ thông tiếp nhận 1 phần tiếng dân tộc thiểu số, gồm từ thông dụng và tên riêng của người hay địa vật và các từ này có thể có vần "phi Việt".
+    Mo hinh   : Từ có nguồn gốc, tiếng dân tộc thiểu số là 1 nước đa sắc tộc, với 54 dân tộc đã công nhận tiếng Việt phổ thông tiếp nhận. 1. Phần tiếng dân quốc thiểu số gồm từ 'Thông dụng' và 'Tên riêng' của người hay địa vật, và các từ này có thể có văn phí viết.
+
+[248] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : qua trinh nay dien ra trong lich su
+    Dap an    : Quá trình này diễn ra trong lịch sử.
+    Mo hinh   : Quá trình này diễn ra trong lịch sử.
+
+[249] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thi ho ten nguoi thi theo tu han viet nhu cac ho trieu dam cam deo con dia danh thi theo ghi am nhu nam huoi khuoi pac
+    Dap an    : thì họ tên người thì theo từ Hán Việt như các họ "Triệu", "Đàm", "Cầm", "Đèo",..., còn địa danh thì theo ghi âm như "Nậm", "Huổi/ Khuổi", "Pắc",...
+    Mo hinh   : Thi hộ: Tên người thi (theo từ Hán Việt) như các hộ chiếu đảm cảm ĐT, còn địa danh thi theo ghi âm (như năm Hoài Khôi, Pac.
+
+[250] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu tieng hmong thi theo ghi am ma khong theo tu han viet mac du tieng hmong co quan he gan hon voi tieng hoa
+    Dap an    : Từ tiếng H'Mông thì theo ghi âm mà không theo từ Hán Việt, mặc dù tiếng H'Mông có quan hệ gần hơn với tiếng Hoa.
+    Mo hinh   : Từ tiếng Hàn, thì theo ghi âm mà không theo từ Hán Việt (mặc dù tiếng Hàn có quan hệ gần hơn với tiếng Hoa).
+
+[251] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truong hop loai tru la ho ten vua meo ma dung tu han viet nhu vuong chi sinh
+    Dap an    : Trường hợp loại trừ là họ tên vua Mèo mà dùng từ Hán Việt như Vương Chí Sình.
+    Mo hinh   : Trường hợp loại trừ là họ tên vừaẻo mà dùng từ Hán Việt như vốn chỉ sinh.
+
+[252] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu tieng noi cua cac dan toc o tay nguyen nam bo
+    Dap an    : Từ tiếng nói của các dân tộc ở Tây Nguyên, Nam Bộ,...
+    Mo hinh   : Từ tiếng nói của các dân tộc ở Tây Nguyên Nam Bộ.
+
+[253] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thi theo ghi am la chinh nhu dak lak krong pac
+    Dap an    : thì theo ghi âm là chính, như Đắk Lắk, Krông Pắc,...
+    Mo hinh   : Thi theo ghi âm là chính như Đắk Lắk, Krông pac.
+
+[254] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoac bien am nhu soc trang nha trang
+    Dap an    : hoặc biến âm như Sóc Trăng, Nha Trang,...
+    Mo hinh   : Hoặc biến âm như sốc, trang nhà, trang.
+
+[255] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ca biet co viec gioi chuc bien phong da kinh hoa dia danh dat ten don bien phong vi du tai xa po y co doncua khau bo y
+    Dap an    : Cá biệt có việc giới chức biên phòng đã "Kinh hóa" địa danh đặt tên đồn biên phòng, ví dụ tại xã Pờ Y có Đồn/Cửa khẩu Bờ Y.
+    Mo hinh   : Cá biệt, có việc giới chức Biên phòng đã kính địa danh đặt tên đơn vị (biên phòng). Ví dụ, tại xã Phù Yên, Cô, Châu Bộ Y.
+
+[256] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac chu va van phi viet viet theo huong dan trong quyet dinh 240qd ve ten rieng khong phai tieng viet trong do cac chu cai f j w z co the tuy nghi su dung
+    Dap an    : Các chữ và vần "phi Việt" viết theo hướng dẫn trong Quyết định 240/QĐ "Về tên riêng không phải tiếng Việt", trong đó các chữ cái F, J, W, Z có thể tùy nghi sử dụng.
+    Mo hinh   : Các chữ và văn phí Việt - Việt theo hướng dẫn trong Quyết định 240/QĐ về tên riêng không phải tiếng Việt, trong đó các chữ cái F, J, W, Z có thể nghị sử dụng.
+
+[257] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tu hon chung tu hon chung la nhung tu tao thanh tu cac yeu to co nguon goc khac nhau nhu giua yeu to thuan viet va han viet giua yeu to thuan viet va yeu to anau
+    Dap an    : Từ hỗn chủng Từ hỗn chủng là những từ tạo thành từ các yếu tố có nguồn gốc khác nhau như giữa yếu tố thuần Việt và Hán Việt, giữa yếu tố thuần Việt và yếu tố Ấn-Âu.
+    Mo hinh   : Từ hơn chung, từ hơn chung là những tự tạo thành từ các yếu tố có nguồn gốc khác nhau như giữa yếu tố thuận Việt và yếu tố ASEAN.
+
+[258] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cung voi su phat trien cua tieng viet cac tu hon chung da gia tang dong 1 vai tro trong viec dien dat cac khai niem moi hon trong xa hoi
+    Dap an    : Cùng với sự phát triển của tiếng Việt, các từ hỗn chủng đã gia tăng, đóng 1 vai trò trong việc diễn đạt các khái niệm mới hơn trong xã hội.
+    Mo hinh   : Cùng với sự phát triển của tiếng Việt, các từ hơn chung đã gia tăng đồng 1 vai trò trong việc diễn đạt các khái niệm mới hơn trong xã hội.
+
+[259] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : om ke – om la tu tieng duc ohm ke la hanviet
+    Dap an    : ôm kế – "ôm" là từ tiếng Đức Ohm, "kế" là Hán-Việt.
+    Mo hinh   : Ôm kể – Ôm là từ tiếng Đức, Ohm kể là Hàn Việt.
+
+[260] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nha bang – nha la thuan viet bang la tu tieng phap banque
+    Dap an    : nhà băng – "nhà" là thuần Việt, "băng" là từ tiếng Pháp banque.
+    Mo hinh   : Nhà bằng – Nhà La Thuận, Việt bằng là từ tiếng Pháp:.
+
+[261] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : game thu – game la tieng anh thu la hanviet
+    Dap an    : game thủ – "game" là tiếng Anh, "thủ" là Hán-Việt.
+    Mo hinh   : game thứ – game là tiếng Anh, thứ là Hàn Việt.
+
+[262] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu han va chu nom la van tu chinh cua viet nam truoc the ky 20
+    Dap an    : Chữ Hán và chữ Nôm là văn tự chính của Việt Nam trước thế kỷ 20.
+    Mo hinh   : Chủ hạn và chủ chốt là văn tự chính của Việt Nam trước thế kỷ 20.
+
+[263] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tat ca cac tac pham su hoc va van hoc co truyen viet nam deu viet bang chu han chu nom nhu chieu doi do hich tuong si binh ngo dai cao doan truong tan thanh dai viet su ky toan thu
+    Dap an    : Tất cả các tác phẩm sử học và văn học cổ truyền Việt Nam đều viết bằng chữ Hán, chữ Nôm như Chiếu dời đô, Hịch tướng sĩ, Bình Ngô đại cáo, Đoạn trường tân thanh, Đại Việt sử ký toàn thư,...
+    Mo hinh   : Tất cả các tác phẩm Sử học và Văn học có truyền Việt Nam đều viết bằng chữ Hán, chủ yếu như Chiều dối đỏ, Hiệp tướng sĩ Bình Ngô Đại cao, Đoàn Trường Tân Thanh, Đại Việt Sử, Kỷ toán thư.
+
+[264] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu quoc ngu la chu latinh dua tren bang chu cai va am vi cua tieng bo dao nha doi chieu voi tieng viet do cac nha truyen giao dong ten bo dao nha xay dung vao dau the ky 17 roi do giao si alexandre de rhodes nguoi avinhon chuan dinh
+    Dap an    : Chữ Quốc ngữ là chữ Latinh dựa trên bảng chữ cái và âm vị của tiếng Bồ Đào Nha đối chiếu với tiếng Việt, do các nhà truyền giáo Dòng Tên Bồ Đào Nha xây dựng vào đầu thế kỷ 17 rồi do giáo sĩ Alexandre de Rhodes người Avinhon chuẩn định.
+    Mo hinh   : Chủ quốc ngữ là chữ Romanh, dựa trên bằng chữ cái và âm vị của tiếng Bồ Đào Nha (đối chiếu với tiếng Việt) do các nhà truyền giáo đồng tên: Bồ Đào Nhà Xây Dựng vào đầu thế kỷ 17 rồi, do Giáo sĩ Olivier De Rhodes, người Aiesecon, chuẩn định.
+
+[265] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : day la nguoi cho in cuon dictionarium annamiticum lusitanum et latinum nam 1651
+    Dap an    : Đây là người cho in cuốn Dictionarium Annamiticum Lusitanum et Latinum năm 1651.
+    Mo hinh   : Đây là người cho in cuốn 'Dctionarium Heterologous Inflammation Regio-Spectanum et Platum' năm 1651.
+
+[266] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu quoc ngu tu luc ra doi tuy co hon 200 nam hinh thanh va phat trien nhung chua du pho bien de la van tu chinh o viet nam vi chu han va chu nom van la dang van tu pho bien cua tieng viet
+    Dap an    : Chữ Quốc ngữ từ lúc ra đời tuy có hơn 200 năm hình thành và phát triển, nhưng chưa đủ phổ biến để là văn tự chính ở Việt Nam vì chữ Hán và chữ Nôm vẫn là dạng văn tự phổ biến của tiếng Việt.
+    Mo hinh   : Chủ quốc Ngụy từ lúc ra đời, tuy có hơn 200 năm hình thành và phát triển, nhưng chưa đủ phổ biến để là văn tự chính ở Việt Nam, vì chủ hạn và chủ chốt vẫn là dạng văn từ phổ biến của tiếng Việt.
+
+[267] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : con cac nha cai cach viet nam ung ho viec truyen ba he chu latinh nhu phuong tien de khai dan tri chan dan khi
+    Dap an    : Còn các nhà cải cách Việt Nam ủng hộ việc truyền bá hệ chữ Latinh như phương tiện để khai dân trí, chấn dân khí.
+    Mo hinh   : Còn các nhà cải cách Việt Nam ủng hộ việc truyền bá hệ chủ nghĩa như phương tiện để khai dân trí chân dân khí.
+
+[268] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cai cach giao duc nam 1906 cua vua thanh thai cung bao gom chuong trinh day chu quoc ngu
+    Dap an    : Cải cách giáo dục năm 1906 của vua Thành Thái cũng bao gồm chương trình dạy chữ Quốc ngữ.
+    Mo hinh   : Cải cách giáo dục năm 1886 của Vua Thanh Thái cũng bao gồm chương trình dạy chủ quốc ngữ.
+
+[269] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tuy vay trong giai doan nay su boc lot cua thuc dan phap khien nguoi viet khong duoc di hoc day du nen hau het nguoi viet giai doan nay tro nen mu chu voi ca chu han chu nom va chu quoc ngu
+    Dap an    : Tuy vậy trong giai đoạn này, sự bóc lột của Thực dân Pháp khiến người Việt không được đi học đầy đủ, nên hầu hết người Việt giai đoạn này trở nên mù chữ với cả chữ Hán, chữ Nôm và chữ Quốc ngữ.
+    Mo hinh   : Tuy vậy, trong giai đoạn này, sự bộc lộ của thực dân pháp khiến người Việt không được đi học đầy đủ, nên hầu hết người Việt giai đoạn nay trở nên mũ chữ, với cả chữ Hán, chữ Roman và chữ Quốc ngữ.
+
+[270] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngay sau khi viet nam dan chu cong hoa lap quoc chinh phu phat dong binh dan hoc vu voi muc tieu nhanh chong giai quyet nan mu chu bang cach day manh day chu quoc ngu cho nguoi dan
+    Dap an    : Ngay sau khi Việt Nam Dân chủ Cộng hòa lập quốc, Chính phủ phát động Bình dân học vụ với mục tiêu nhanh chóng giải quyết nạn mù chữ bằng cách đẩy mạnh dạy chữ Quốc ngữ cho người dân.
+    Mo hinh   : Ngay sau khi Việt Nam Dân chủ Cộng lập quốc, Chính phủ phát động bình dân học vụ với mục tiêu nhanh chóng, giải quyết nạn mù chữ bằng cách đẩy mạnh dạy chủ quốc ngữ cho người dân.
+
+[271] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu han va chu nom van duoc mot luong nguoi viet su dung song song cung chu quoc ngu nhung den nam 1950 giang day chu han nom bi loai ra khoi chuong trinh giao duc cua viet nam dan chu cong hoa vi do pho bien o viet nam khong con nhieu
+    Dap an    : Chữ Hán và chữ Nôm vẫn được một lượng người Việt sử dụng song song cùng chữ Quốc ngữ, nhưng đến năm 1950, giảng dạy chữ Hán Nôm bị loại ra khỏi chương trình giáo dục của Việt Nam Dân chủ Cộng hòa vì độ phổ biến ở Việt Nam không còn nhiều.
+    Mo hinh   : Chủ hạn và chủ yếu vẫn được một lượng người Việt sử dụng song song cùng chủ quốc ngữ, nhưng đến năm 1956, giảng dạy chủ hạn mới bị loại ra khỏi chương trình giáo dục của Việt Nam Dân chủ Cộng, vì đó phổ biến ở Việt Nam không còn nhiều.
+
+[272] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguoi kinh ban dia o dong hung van duy tri duoc su pho bien cua chu han va chu nom trong cong dong va van dung lam van tu chinh cho tieng viet o thoi hien dai giong nhu nguoi viet xua thay vi dung chu latinh nhu nguoi viet o viet nam hien tai
+    Dap an    : Người Kinh bản địa ở Đông Hưng vẫn duy trì được sự phổ biến của chữ Hán và chữ Nôm trong cộng đồng và vẫn dùng làm văn tự chính cho tiếng Việt ở thời hiện đại giống như người Việt xưa, thay vì dùng chữ Latinh như người Việt ở Việt Nam hiện tại.
+    Mo hinh   : Người kinh bản địa ở Đông Hùng vẫn duy trì được sự phổ biến của chủ hạn và chủ chốt trong cộng đồng, và vận dụng làm văn từ chính cho tiếng Việt ở thời hiện đại, giống như người Việt Nam, thay vì dùng chữ Hán như người viết ở Việt Nam hiện tại.
+
+[273] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hien phap nuoc cong hoa xa hoi chu nghia viet nam 2013 tai chuong i dieu 5 muc 3 ghi tieng viet la ngon ngu quoc gia cua viet nam
+    Dap an    : Hiến pháp nước Cộng hòa xã hội chủ nghĩa Việt Nam 2013, tại Chương I Điều 5 Mục 3, ghi tiếng Việt là ngôn ngữ quốc gia của Việt Nam.
+    Mo hinh   : Hiện pháp nước công hóa - xã hội chủ nghĩa Việt Nam 2013 tại chương I. Điều 5 Mục 3 ghi tiếng Việt là ngôn ngữ quốc gia của Việt Nam.
+
+[274] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khong co luat le nao cam nguoi viet viet tieng viet hien dai bang chu han nom
+    Dap an    : Không có luật lệ nào cấm người Việt viết tiếng Việt hiện đại bằng chữ Hán Nôm.
+    Mo hinh   : Không có luật lệ nào cấm người Việt viết tiếng Việt hiện đại bằng chữ Hán (tên.
+
+[275] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thu phap cung voi chu han kana va hangul co nguoi yeu thich thu phap nang chu viet tieng viet len thanh mot bo mon nghe thuat
+    Dap an    : Thư pháp Cùng với chữ Hán, Kana và Hangul, có người "yêu thích" thư pháp nâng chữ viết tiếng Việt lên thành một bộ môn nghệ thuật.
+    Mo hinh   : Thủ pháp, cùng với chủ hành Dolce và hàngul, có người yêu thích thu pháp năng (chữ viết, tiếng Việt) lên thành một bộ môn nghệ thuật.
+
+[276] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thu phap chu viet ban dau la thu phap chu nom va chu han
+    Dap an    : Thư pháp chữ Việt ban đầu là thư pháp chữ Nôm và chữ Hán.
+    Mo hinh   : Thu pháp chữ viết, ban đầu là thu pháp chữ màu và chữ nhật.
+
+[277] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau nay chu quoc ngu tro nen pho bien hon trong khi nhu cau va so thich treo chu trong nha van con nguoi choi chu da khoi xuong thu phap chu quoc ngu
+    Dap an    : Sau này chữ Quốc ngữ trở nên phổ biến hơn trong khi nhu cầu và sở thích treo chữ trong nhà vẫn còn, người chơi chữ đã khởi xướng thư pháp chữ Quốc ngữ.
+    Mo hinh   : Sau này, Chủ quốc ngữ trở nên phổ biến hơn. Trong khi nhu cầu và sở thích treo chu trong nhà vẫn còn người chơi chu đã khởi xướng thu pháp chủ quốc ngữ.
+
+[278] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : con thu phap chu han va chu nom hien nay van duy tri song song
+    Dap an    : Còn thư pháp chữ Hán và chữ Nôm hiện nay vẫn duy trì song song.
+    Mo hinh   : Còn thủ pháp chu hạn và chủ chốt hiện nay vẫn duy trì song song.
+
+[279] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nen de co the viet tieng viet tren may tinh va dien thoai di dong can co bo go la phan mem ho tro soan thao van ban bang tieng viet di kem mot so phong chu quoc ngu
+    Dap an    : Nên để có thể viết tiếng Việt trên máy tính và điện thoại di động cần có bộ gõ là phần mềm hỗ trợ soạn thảo văn bản bằng tiếng Việt đi kèm một số phông chữ Quốc ngữ.
+    Mo hinh   : Nên để có thể viết tiếng Việt trên máy tính và điện thoại di động, cần có bổ trợ là phần mềm hỗ trợ soạn thảo văn bản bằng tiếng Việt đi kèm một số phòng chữ quốc ngữ.
+
+[280] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguoi dung cung co the cai dat them cac phong ky tu chu quoc ngu khac phuc vu trang tri va nghe thuat
+    Dap an    : Người dùng cũng có thể cài đặt thêm các phông ký tự chữ Quốc ngữ khác phục vụ trang trí và nghệ thuật.
+    Mo hinh   : Người dùng cũng có thể cài đặt thêm các phòng ký từ chủ quốc ngữ khác phục vụ trang trí và nghệ thuật.
+
+[281] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac bo go tieng viet khac nhau se quy dinh cac phim bam khac nhau de hien thi cac dau thanh dau mu va dau moc
+    Dap an    : Các bộ gõ tiếng Việt khác nhau sẽ quy định các phím bấm khác nhau để hiển thị các dấu thanh, dấu mũ và dấu móc.
+    Mo hinh   : Các bộ gõ tiếng Việt khác nhau sẽ quy định các phím bấm khác nhau để hiện thị các dấu thành, dấu mũ và dấu mốc.
+
+[282] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : co nhung quy uoc chuan dau tieng viet bo ma cach go va nhung phan mem khac nhau
+    Dap an    : Có những quy ước chuẩn dấu tiếng Việt, bộ mã, cách gõ và những phần mềm khác nhau.
+    Mo hinh   : Có những quy ước chuẩn đầu tiếng Việt, bộ mã cách gọi và những phần mềm khác nhau.
+
+[283] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : co bo ma chu viet theo chuan quoc te unicode
+    Dap an    : Có bộ mã chữ Việt theo chuẩn quốc tế Unicode.
+    Mo hinh   : Có bộ mã chữ viết theo chuẩn quốc tế (AMBAD).
+
+[284] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : doi voi viec go chu han va chu nom bang tieng viet do dang ky tu nay hien khong duoc su dung pho bien o viet nam nen cac hang san xuat may tinh dien thoai hay phan mem coi nhu loai bo
+    Dap an    : Đối với việc gõ chữ Hán và chữ Nôm bằng tiếng Việt, do dạng ký tự này hiện không được sử dụng phổ biến ở Việt Nam nên các hãng sản xuất máy tính, điện thoại hay phần mềm coi như loại bỏ.
+    Mo hinh   : Đối với việc go chữ hạn và chữ màu bằng tiếng Việt do đăng ký từ này, hiện không được sử dụng phổ biến ở Việt Nam, nên các hãng sản xuất máy tính điện thoại hay phần mềm coi như loại bỏ.
+
+[285] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thoi gian gan day de phuc vu cho nhu cau tim hieu ve lich su hay van hoc co cung nhu chuyen nganh han nom mot so ca nhan hay to chuc da tao ra nhung trang web hay phan mem giup viet chu han va chu nom bang bo go chu quoc ngu
+    Dap an    : Thời gian gần đây để phục vụ cho nhu cầu tìm hiểu về lịch sử hay văn học cổ cũng như chuyên ngành Hán Nôm, một số cá nhân hay tổ chức đã tạo ra những trang web hay phần mềm giúp viết chữ Hán và chữ Nôm bằng bộ gõ chữ Quốc ngữ.
+    Mo hinh   : Thời gian gần đây, để phục vụ cho nhu cầu tìm hiểu về Lịch sử hay Văn học có cũng như chuyên ngành, 'Hạn cuối' - một số cá nhân hay tổ chức đã tạo ra những trang web hay phần mềm giúp viết chữ Hán và chữ Nga bằng bộ gõ chữ Quốc ngữ.
+
+[286] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : voi chu han do dong bo voi cac chu cua bo go tieng trung va tieng nhat nen viec hien thi khong kho khan con chu nom do mot luong chu chua duoc ma hoa day du nen co the hien thi bi loi tren mot so may tinh va dien thoai duoi dang o vuong hay dau hoi cham
+    Dap an    : Với chữ Hán do đồng bộ với các chữ của bộ gõ tiếng Trung và tiếng Nhật nên việc hiển thị không khó khăn, còn chữ Nôm do một lượng chữ chưa được mã hoá đầy đủ nên có thể hiển thị bị lỗi trên một số máy tính và điện thoại dưới dạng ô vuông hay dấu hỏi chấm.
+    Mo hinh   : Với chủ hạn độ đồng bộ với các chữ của bộ gõ tiếng Trung và tiếng Nhật, nên việc hiển thị không khó khăn, còn chủ yếu do một lượng chữ chưa được mã hóa đầy đủ, nên có thể hiện thị bị lỗi trên một số máy tính và điện thoại dưới dạng ô vuông hay dấu hỏi chấm.
+
+[287] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : xem them tieng viet tai hoa ky chu thich tham khao thu muc tieng viet tieng anh lien ket ngoai tu dien vietbola cua alexandre de rhodes tren mang tu dien tieng viet xua tren mang nha sach song huong tu dien vietlatinh cua jl
+    Dap an    : Xem thêm Tiếng Việt tại Hoa Kỳ Chú thích Tham khảo Thư mục Tiếng Việt Tiếng Anh Liên kết ngoài Từ điển Việt-Bồ-La của Alexandre de Rhodes trên mạng Từ điển tiếng Việt xưa trên mạng nhà sách Sông Hương : Từ điển Việt-Latinh của J.L.
+    Mo hinh   : Xem thêm tiếng Việt tại Hoa Kỳ: Chú thích tham khảo: - Thư mục tiếng Việt (tiếng Anh liên kết ngoài) từ diện Việt-ANH của Dr. Olivier để rhodes trên màng từ diện Tiếng Việt (xửa trên màng nhà sách), song hướng từ diện Viet-Anh của JL.
+
+[288] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ten ohio theo tieng iroquois co nghia la song dep va do cung la ten cua mot dong song dung lam ranh gioi phia nam cua tieu bang nay voi tieu bang kentucky
+    Dap an    : Tên "Ohio" theo tiếng Iroquois có nghĩa là "sông đẹp" và đó cũng là tên của một dòng sông dùng làm ranh giới phía nam của tiểu bang này với tiểu bang Kentucky.
+    Mo hinh   : Tên Ohio (theo tiếng Ohio) có nghĩa là sống đẹp, và đó cũng là tên của một dòng sống đúng, làm ranh giới phía Nam của tiêu bằng này với tiêu bằng Pennsylvania.
+
+[289] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : day la noi sinh cua cac tong thong ulysses s
+    Dap an    : Đây là nơi sinh của các Tổng thống: Ulysses S.
+    Mo hinh   : Đây là nơi sinh của các tổng thống Ulysses S.
+
+[290] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : lich su ohio la tieu bang dau tien duoc chia ra tu lanh tho tay bac
+    Dap an    : Lịch sử Ohio là tiểu bang đầu tiên được chia ra từ Lãnh thổ Tây Bắc.
+    Mo hinh   : Lịch sử Ohio là tiêu bằng đầu tiên được chia ra từ lãnh thổ Tây Bắc.
+
+[291] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vao nam 1754 phap va anh giao chien tren dat my vi xung dot quyen loi trong mot cuoc chien ma sau nay duoc goi la chien tranh phap voi nguoi da do
+    Dap an    : Vào năm 1754, Pháp và Anh giao chiến trên đất Mỹ vì xung đột quyền lợi trong một cuộc chiến mà sau này được gọi là Chiến tranh Pháp với người da đỏ.
+    Mo hinh   : Vào năm 1754, Pháp và Anh giao chiến trên đất Mỹ vì xung đột quyền lợi trong một cuộc chiến mà sau này được gọi là 'chiến tranh pháp với người đã đó'.
+
+[292] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vi hiep uoc paris phap danh phai chuyen quyen quan ly ohio cho phia anh
+    Dap an    : Vì Hiệp ước Paris, Pháp đành phải chuyển quyền quản lý Ohio cho phía Anh.
+    Mo hinh   : Vì hiệp ước Paris, Pháp dành phải chuyển quyền quản lý Ohio cho phía Anh.
+
+[293] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : anh thong qua tuyen ngon 1763 cam nhung thuc dan my dung bo tri trong vung ohio
+    Dap an    : Anh thông qua Tuyên ngôn 1763 cấm những thực dân Mỹ đừng bố trí trong Vùng Ohio.
+    Mo hinh   : Ảnh thông qua tuyên ngôn 1763: 'Cầm những thực dân mỹ đúng bố trí trong vùng Ohio. '
+
+[294] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : quyen kiem soat cua anh doi voi ohio ket thuc boi chien thang cua my trong cuoc cach mang my
+    Dap an    : Quyền kiểm soát của Anh đối với Ohio kết thúc bởi chiến thắng của Mỹ trong Cuộc cách mạng Mỹ.
+    Mo hinh   : Quyền kiểm soát của anh đối với Ohio kết thúc bởi chiến thắng của Mỹ trong cuộc cách mạng Mỹ.
+
+[295] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoa ky tao ra vung lanh tho tay bac vao nam 1787
+    Dap an    : Hoa Kỳ tạo ra vùng lãnh thổ Tây Bắc vào năm 1787.
+    Mo hinh   : Hoa Kỳ tạo ra vùng lãnh thổ Tây Bắc vào năm 1787.
+
+[296] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ohio nam trong vung lanh tho tay bac
+    Dap an    : Ohio nằm trong vùng lãnh thổ Tây Bắc.
+    Mo hinh   : Ohio nằm trong vùng lãnh thổ Tây Bắc.
+
+[297] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngay 19 thang 2 nam 1803 tong thong jefferson ky mot dao luat cua quoc hoi cong nhan ohio la tieu bang thu 17
+    Dap an    : Ngày 19 tháng 2 năm 1803, Tổng thống Jefferson ký một đạo luật của Quốc hội công nhận Ohio là tiểu bang thứ 17.
+    Mo hinh   : Ngày 19 tháng 2 năm 1803, Tổng thống Kennedy ký một đạo luật của Quốc hội Công nhận Ohio là Tiêu bằng thứ 17.
+
+[298] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thong le cua quoc hoi ve cong bo ngay chinh thuc co quyen tieu bang khong dien ra cho den tan nam 1812 khi louisiana duoc nhan vao cho nen vao nam 1953 tong thong eisenhower ky mot dao luat cong bo ngay 1 thang 3 nam 1803 la ngay chinh thuc ma ohio duoc tro thanh tieu bang my
+    Dap an    : Thông lệ của Quốc hội về công bố ngày chính thức có quyền tiểu bang không diễn ra cho đến tận năm 1812, khi Louisiana được nhận vào, cho nên vào năm 1953 Tổng thống Eisenhower ký một đạo luật công bố ngày 1 tháng 3 năm 1803 là ngày chính thức mà Ohio được trở thành tiểu bang Mỹ.
+    Mo hinh   : Thông lệ của Quốc hội về công bố ngày chính thức có quyền tiêu bằng không diễn ra cho đến tận năm 18/12 khi Illinois được nhận vào chỗ nền vào năm 1952. Tổng thống Kennedy ký một đạo luật công bố: Ngày 1 tháng 3 năm 1803 là ngày chính thực mà Ohio được trở thành tiêu bằng Mỹ.
+
+[299] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : luat phap va chinh quyen thu phu cua ohio la columbus gan trung tam tieu bang
+    Dap an    : Luật pháp và chính quyền Thủ phủ của Ohio là Columbus, gần trung tâm tiểu bang.
+    Mo hinh   : Luật pháp và chính quyền Thủ phủ của Ohio là Columbia, gần Trung tâm Tiểu bang.
+
+[300] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ohio tiep giap voi pennsylvania o phia dong michigan o phia bac indiana o phia tay kentucky o phia nam va tay virginia o phia dong nam
+    Dap an    : Ohio tiếp giáp với Pennsylvania ở phía đông, Michigan ở phía bắc, Indiana ở phía tây, Kentucky ở phía nam, và Tây Virginia ở phía đông nam.
+    Mo hinh   : Ohio tiếp giáp với Pennsylvania ở phía Đông, Minnesota ở phía Bắc, Indiana ở phía Tây, Illinois ở phía Nam, và Tây Virginia ở phía Đồng Nam.
+
+------------------------------------------------------------------------------
+Tong ket: 62 cau dung hoan toan | 238 cau gan dung | 0 cau khong sua duoc
+------------------------------------------------------------------------------
+
+==============================================================================
+HẾT LOG
+==============================================================================

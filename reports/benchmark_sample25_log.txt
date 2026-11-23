@@ -1,0 +1,193 @@
+==============================================================================
+LOG ĐÁNH GIÁ BENCHMARK ĐỀ TÀI NLP-28
+Sửa lỗi & chuẩn hóa phụ đề tiếng Việt từ ASR bằng mô hình Seq2Seq
+==============================================================================
+Thời điểm chạy : 2026-11-21T17:29:22+00:00
+Thiết bị       : GPU/Colab
+Tập kiểm thử   : data/gold_test/gd1_basic/sample_test.jsonl (25 mẫu)
+Mô hình Seq2Seq: /content/drive/MyDrive/vi-sub-correction/checkpoints/bmd1905-sub-corrector_lan5_asr_hard_full_ls1
+Engine đo được : seq2seq
+Batch size     : 16
+
+==============================================================================
+1. BẢNG TỔNG HỢP CHỈ SỐ ĐỐI ĐẦU
+==============================================================================
+### Bảng kết quả Benchmark định lượng (Tập Test: 25 mẫu)
+
+| Phương pháp | BLEU ↑ | WER (%) ↓ | CER (%) ↓ | Exact Match (%) ↑ | ROUGE-L (%) ↑ | Edit-P (%) ↑ | Edit-R (%) ↑ | Edit-F1 (%) ↑ |
+| :--- |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline 1 (Identity)** | **0.00** | **92.31%** | 26.98% | **0.00%** | 7.58% | 0.00% | 0.00% | **0.00%** |
+| **Baseline 2 (Rule & Dictionary)** | **7.50** | **90.15%** | 23.55% | **0.00%** | 9.72% | 0.00% | 0.00% | **0.00%** |
+| **Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1)** | **100.00** | **6.15%** | 2.57% | **52.00%** | 93.89% | 52.00% | 100.00% | **68.42%** |
+
+*Ghi chú chỉ số:*
+- **BLEU / ROUGE-L ↑**: độ tương đồng với câu chuẩn (BLEU thiên về n-gram khớp hẳn, ROUGE-L thiên về bao phủ).
+- **WER ↓ / CER ↓**: tỷ lệ lệch ở mức từ và mức KÝ TỰ. CER mới thấy được lỗi thiếu dấu thanh,
+  vì WER vẫn đếm một từ sai dấu là đúng 1 từ sai dù chỉ lệch một ký tự.
+- **Exact Match ↑**: tỷ lệ câu trùng 100% đáp án chuẩn. Con số dễ đọc nhất cho hội đồng.
+- **Edit-P ↑**: trong các câu mô hình đụng vào sửa, bao nhiêu % sửa đúng đích (càng thấp càng over-correct).
+- **Edit-R ↑**: bao nhiêu % câu cần sửa thì được can thiệp (100% = không bỏ sót câu nào).
+- **Edit-F1 ↑**: trung bình điều hòa của Edit-P và Edit-R.
+
+==============================================================================
+2. HIỆU NĂNG TÁCH THEO LOẠI LỖI
+==============================================================================
+
+### Bảng hiệu năng theo loại lỗi (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+
+| Loại lỗi | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| tones | 25 | 52.00 | 2.57 | 100.00 | 68.42 |
+| punctuation | 25 | 52.00 | 2.57 | 100.00 | 68.42 |
+| capitalization | 25 | 52.00 | 2.57 | 100.00 | 68.42 |
+| homophone | 1 | 100.00 | 0.00 | 100.00 | 100.00 |
+
+*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*
+*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*
+
+==============================================================================
+3. CHI TIẾT SỐ CÂU THUỘC TỪNG NHÓM SỬA LỖI
+==============================================================================
+  Baseline 1 (Identity)              sua dung   0 | sua nham   0 | bo sot  25 | giu dung   0
+  Baseline 2 (Rule & Dictionary)     sua dung   0 | sua nham  25 | bo sot   0 | giu dung   0
+  Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1) sua dung  13 | sua nham  12 | bo sot   0 | giu dung   0
+
+  ('sua nham' gom ca over-correction: câu vốn đúng bị sửa tới.)
+
+
+==============================================================================
+PHÂN TÍCH TỪNG CÂU (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+==============================================================================
+
+[1] (tones, punctuation, capitalization, homophone)  ket qua: DUNG
+    ASR goc   : toi di lam o ngan hang va danh tien tiet kiem
+    Dap an    : Tôi đi làm ở ngân hàng và dành tiền tiết kiệm.
+    Mo hinh   : Tôi đi làm ở ngân hàng và dành tiền tiết kiệm.
+
+[2] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : hom nay thoi tiet rat dep chung ta di choi nhe
+    Dap an    : Hôm nay thời tiết rất đẹp, chúng ta đi chơi nhé!
+    Mo hinh   : Hôm nay, thời tiết rất đẹp, chúng ta đi chơi nhé.
+
+[3] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : hoc phan xu ly ngon ngu tu nhien rat la bo ich
+    Dap an    : Học phần Xử lý ngôn ngữ tự nhiên rất là bổ ích.
+    Mo hinh   : Học phần xử lý ngôn ngữ tự nhiên rất là bổ ích.
+
+[4] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : bac si bao toi phai nghi ngoi va uong thuoc dung gio
+    Dap an    : Bác sĩ bảo tôi phải nghỉ ngơi và uống thuốc đúng giờ.
+    Mo hinh   : Bác sĩ bảo tôi phải nghỉ ngơi và uống thuốc đúng giờ.
+
+[5] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : xin chao cac ban da quay tro lai voi kenh youtube cua minh
+    Dap an    : Xin chào các bạn đã quay trở lại với kênh YouTube của mình.
+    Mo hinh   : Xin chào các bạn đã quay trở lại với kênh YouTube của mình.
+
+[6] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : ngay hom nay chung ta se cung nhau tim hieu ve tri tue nhan tao
+    Dap an    : Ngày hôm nay, chúng ta sẽ cùng nhau tìm hiểu về trí tuệ nhân tạo.
+    Mo hinh   : Ngày hôm nay, chúng ta sẽ cùng nhau tìm hiểu về Trí tuệ nhân tạo.
+
+[7] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : khoa hoc nay huong dan lap trinh python tu co ban den nang cao
+    Dap an    : Khóa học này hướng dẫn lập trình Python từ cơ bản đến nâng cao.
+    Mo hinh   : học này hướng dẫn lập trình Algothon từ cơ bản đến nâng cao.
+
+[8] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : nhieu nguoi van con nham lan giua ch va tr khi phat am
+    Dap an    : Nhiều người vẫn còn nhầm lẫn giữa ch và tr khi phát âm.
+    Mo hinh   : Nhiều người vẫn còn nhầm lẫn giữa CH và TR khi phát âm.
+
+[9] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : ban hay nho nhan dang ky va chuong thong bao nhe
+    Dap an    : Bạn hãy nhớ nhấn đăng ký và chuông thông báo nhé!
+    Mo hinh   : Bạn hãy nhớ nhấn 'Đăng ký và chương thông báo' nhé.
+
+[10] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : chuc tat ca cac ban mot ngay lam viec that la hieu qua
+    Dap an    : Chúc tất cả các bạn một ngày làm việc thật là hiệu quả.
+    Mo hinh   : Chúc tất cả các bạn một ngày làm việc thật là hiệu quả.
+
+[11] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : he thong nhan dang giong noi thuong gap kho khan khi co tieng on
+    Dap an    : Hệ thống nhận dạng giọng nói thường gặp khó khăn khi có tiếng ồn.
+    Mo hinh   : Hệ thống nhận dạng giống nơi thường gặp khó khăn khi có tiếng ồn.
+
+[12] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : viec chuan hoa phu de video giup nguoi xem de tiep thu hon
+    Dap an    : Việc chuẩn hóa phụ đề video giúp người xem dễ tiếp thu hơn.
+    Mo hinh   : Việc chuẩn hóa phụ đề video giúp người xem dễ tiếp thu hơn.
+
+[13] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : chung toi su dung mo hinh ngon ngu lon de xu ly van ban
+    Dap an    : Chúng tôi sử dụng mô hình ngôn ngữ lớn để xử lý văn bản.
+    Mo hinh   : Chúng tôi sử dụng mô hình ngôn ngữ lớn để xử lý văn bản.
+
+[14] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : sinh vien can chu dong on tap de dat ket qua cao trong ky thi
+    Dap an    : Sinh viên cần chủ động ôn tập để đạt kết quả cao trong kỳ thi.
+    Mo hinh   : Sinh viên cần chủ động ôn tập để đạt kết quả cao trong kỳ thi.
+
+[15] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : gia ca thi truong hom nay co su bien dong nhe
+    Dap an    : Giá cả thị trường hôm nay có sự biến động nhẹ.
+    Mo hinh   : Giá cả thị trường hôm nay có sự biến động nhé.
+
+[16] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : doan phim nay co chat luong am thanh rat tot va hinh anh sac net
+    Dap an    : Đoạn phim này có chất lượng âm thanh rất tốt và hình ảnh sắc nét.
+    Mo hinh   : Đoàn phim này có chất lượng âm thanh rất tốt và hình ảnh sắc nét.
+
+[17] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : cong nghe ngay cang phat trien va thay doi cuoc song cua chung ta
+    Dap an    : Công nghệ ngày càng phát triển và thay đổi cuộc sống của chúng ta.
+    Mo hinh   : Công nghệ ngày càng phát triển và thay đổi cuộc sống của chúng ta.
+
+[18] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : hay giu gin suc khoe va luyen tap the duc the thao deu dan
+    Dap an    : Hãy giữ gìn sức khỏe và luyện tập thể dục thể thao đều đặn.
+    Mo hinh   : Hãy giữ gìn sức và luyện tập thể dục thể thao đều dẫn.
+
+[19] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : ban co the tai tai lieu hoc tap tai duong link ben duoi
+    Dap an    : Bạn có thể tải tài liệu học tập tại đường link bên dưới.
+    Mo hinh   : Bạn có thể tải tài liệu học tập tại đường link bên dưới.
+
+[20] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : cam on cac ban da chu y lang nghe va theo doi
+    Dap an    : Cảm ơn các bạn đã chú ý lắng nghe và theo dõi.
+    Mo hinh   : Cảm ơn các bạn đã chú ý, lắng nghe và theo dõi.
+
+[21] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : toi muon gui loi chuc tot dep nhat den gia dinh ban
+    Dap an    : Tôi muốn gửi lời chúc tốt đẹp nhất đến gia đình bạn.
+    Mo hinh   : Tôi muốn gửi lời chúc tốt đẹp nhất đến gia đình bạn.
+
+[22] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : hoc may giup giai quyet nhieu bai toan phuc tap trong thuc te
+    Dap an    : Học máy giúp giải quyết nhiều bài toán phức tạp trong thực tế.
+    Mo hinh   : Học máy giúp giải quyết nhiều bài toán phức tạp trong thực tế.
+
+[23] (tones, punctuation, capitalization)  ket qua: GAN DUNG
+    ASR goc   : cac ban hay binh luan y kien cua minh o phan ben duoi nhe
+    Dap an    : Các bạn hãy bình luận ý kiến của mình ở phần bên dưới nhé!
+    Mo hinh   : Các bạn hãy bình luận ý kiến của mình ở phần bên dưới nhé.
+
+[24] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : chu de ngay mai se la ve thi giac may tinh va xu ly anh
+    Dap an    : Chủ đề ngày mai sẽ là về thị giác máy tính và xử lý ảnh.
+    Mo hinh   : Chủ đề ngày mai sẽ là về thị giác máy tính và xử lý ảnh.
+
+[25] (tones, punctuation, capitalization)  ket qua: DUNG
+    ASR goc   : chuyen di nay dem lai rat nhieu trai nghiem dang nho
+    Dap an    : Chuyến đi này đem lại rất nhiều trải nghiệm đáng nhớ.
+    Mo hinh   : Chuyến đi này đem lại rất nhiều trải nghiệm đáng nhớ.
+
+------------------------------------------------------------------------------
+Tong ket: 13 cau dung hoan toan | 12 cau gan dung | 0 cau khong sua duoc
+------------------------------------------------------------------------------
+
+==============================================================================
+HẾT LOG
+==============================================================================

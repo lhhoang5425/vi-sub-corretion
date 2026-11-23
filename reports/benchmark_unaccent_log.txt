@@ -1,0 +1,1065 @@
+==============================================================================
+LOG ĐÁNH GIÁ BENCHMARK ĐỀ TÀI NLP-28
+Sửa lỗi & chuẩn hóa phụ đề tiếng Việt từ ASR bằng mô hình Seq2Seq
+==============================================================================
+Thời điểm chạy : 2026-11-21T17:30:17+00:00
+Thiết bị       : GPU/Colab
+Tập kiểm thử   : data/gold_test/gd1_basic/basic_test_unaccent_all.jsonl (200 mẫu)
+Mô hình Seq2Seq: /content/drive/MyDrive/vi-sub-correction/checkpoints/bmd1905-sub-corrector_lan5_asr_hard_full_ls1
+Engine đo được : seq2seq
+Batch size     : 16
+
+==============================================================================
+1. BẢNG TỔNG HỢP CHỈ SỐ ĐỐI ĐẦU
+==============================================================================
+### Bảng kết quả Benchmark định lượng (Tập Test: 200 mẫu)
+
+| Phương pháp | BLEU ↑ | WER (%) ↓ | CER (%) ↓ | Exact Match (%) ↑ | ROUGE-L (%) ↑ | Edit-P (%) ↑ | Edit-R (%) ↑ | Edit-F1 (%) ↑ |
+| :--- |:---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline 1 (Identity)** | **3.93** | **88.53%** | 28.63% | **0.00%** | 11.37% | 0.00% | 0.00% | **0.00%** |
+| **Baseline 2 (Rule & Dictionary)** | **3.83** | **87.33%** | 27.05% | **0.00%** | 13.04% | 0.00% | 0.00% | **0.00%** |
+| **Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1)** | **100.00** | **7.93%** | 2.45% | **35.50%** | 91.89% | 35.50% | 100.00% | **52.40%** |
+
+*Ghi chú chỉ số:*
+- **BLEU / ROUGE-L ↑**: độ tương đồng với câu chuẩn (BLEU thiên về n-gram khớp hẳn, ROUGE-L thiên về bao phủ).
+- **WER ↓ / CER ↓**: tỷ lệ lệch ở mức từ và mức KÝ TỰ. CER mới thấy được lỗi thiếu dấu thanh,
+  vì WER vẫn đếm một từ sai dấu là đúng 1 từ sai dù chỉ lệch một ký tự.
+- **Exact Match ↑**: tỷ lệ câu trùng 100% đáp án chuẩn. Con số dễ đọc nhất cho hội đồng.
+- **Edit-P ↑**: trong các câu mô hình đụng vào sửa, bao nhiêu % sửa đúng đích (càng thấp càng over-correct).
+- **Edit-R ↑**: bao nhiêu % câu cần sửa thì được can thiệp (100% = không bỏ sót câu nào).
+- **Edit-F1 ↑**: trung bình điều hòa của Edit-P và Edit-R.
+
+==============================================================================
+2. HIỆU NĂNG TÁCH THEO LOẠI LỖI
+==============================================================================
+
+### Bảng hiệu năng theo loại lỗi (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+
+| Loại lỗi | Số câu | Exact Match (%) ↑ | CER (%) ↓ | BLEU ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| khong_quy_nhan | 200 | 35.50 | 2.45 | 100.00 | 52.40 |
+
+*Một câu mang nhiều nhãn lỗi (vd: tones + punctuation) được đếm ở cả hai dòng,*
+*nên tổng Số câu có thể lớn hơn số mẫu của tập test.*
+
+==============================================================================
+3. CHI TIẾT SỐ CÂU THUỘC TỪNG NHÓM SỬA LỖI
+==============================================================================
+  Baseline 1 (Identity)              sua dung   0 | sua nham   0 | bo sot 200 | giu dung   0
+  Baseline 2 (Rule & Dictionary)     sua dung   0 | sua nham 200 | bo sot   0 | giu dung   0
+  Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1) sua dung  71 | sua nham 129 | bo sot   0 | giu dung   0
+
+  ('sua nham' gom ca over-correction: câu vốn đúng bị sửa tới.)
+
+
+==============================================================================
+PHÂN TÍCH TỪNG CÂU (Seq2Seq (bmd1905-sub-corrector_lan5_asr_hard_full_ls1))
+==============================================================================
+
+[1] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tom luoc bao cao lien quan den hoat dong cua ban thanh tra nhan dan
+    Dap an    : Tóm lược báo cáo liên quan đến hoạt động của Ban Thanh tra Nhân dân.
+    Mo hinh   : Tóm lược báo cáo liên quan đến hoạt động của Ban Thanh tra Nhân dân.
+
+[2] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong buoi le tot nghiep dot 2 vua qua bui van tinh da duoc trao danh hieu tan thu khoa nganh cong nghe thong tin
+    Dap an    : Trong buổi lễ tốt nghiệp đợt 2 vừa qua, Bùi Văn Tình đã được trao danh hiệu Tân Thủ khoa ngành Công nghệ Thông tin.
+    Mo hinh   : Trong buổi lễ tốt nghiệp đợt 2 vừa qua, Bùi Văn Tình đã được trao danh hiệu tân thủ khoa ngành Công nghệ Thông tin.
+
+[3] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : de dat duoc nhung ket qua hoc tap dang ke
+    Dap an    : Để đạt được những kết quả học tập đáng kể.
+    Mo hinh   : Để đạt được những kết quả học tập đáng kể.
+
+[4] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ts nguyen minh tam da phat di mot loi nhan
+    Dap an    : TS Nguyễn Minh Tâm đã phát đi một lời nhắn.
+    Mo hinh   : TS. Nguyễn Minh Tâm đã phát đi một lời nhắn.
+
+[5] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tran vinh khanh la nguoi nhan cup bac con cup dong duoc trao cho ha van hoang
+    Dap an    : Trần Vinh Khánh là người nhận Cúp Bạc, còn Cúp Đồng được trao cho Hà Văn Hoàng.
+    Mo hinh   : Trần Vinh Khánh là người nhận cúp bạc, còn cúp đồng được trao cho Hà Văn Hoàng.
+
+[6] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : day la quyet dinh dung dan cho su phat trien ca nhan va su dong gop tich cuc vao an ninh thong tin cua xa hoi bich phuong da tim kiem nhieu nguon thong tin
+    Dap an    : Đây là quyết định đúng đắn cho sự phát triển cá nhân và sự đóng góp tích cực vào an ninh thông tin của xã hội. Bích Phượng đã tìm kiếm nhiều nguồn thông tin.
+    Mo hinh   : Đây là quyết định đúng đắn cho sự phát triển cá nhân và sự đóng góp tích cực vào an ninh thông tin của xã hội. Bích Phương đã tìm kiếm nhiều nguồn thông tin.
+
+[7] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bich phuong da co duoc nhieu kinh nghiem thuc tien sau khi ra truong
+    Dap an    : Bích Phượng đã có được nhiều kinh nghiệm thực tiễn sau khi ra trường.
+    Mo hinh   : Bích Phương đã có được nhiều kinh nghiệm thực tiễn sau khi ra trường.
+
+[8] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tai kist so luong nghien cuu sinh viet nam hien nay la 30 nguoi
+    Dap an    : Tại KIST, số lượng nghiên cứu sinh Việt Nam hiện nay là 30 người.
+    Mo hinh   : Tại KIST, số lượng nghiên cứu sinh Việt Nam hiện nay là 30 người.
+
+[9] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban da thuc hien nhieu phuong phap hoc tu viec ap dung ky thuat pomodoro chia cong viec thanh cac khoang thoi gian giong nhau den viec ve so do tu duy va doc tai lieu truoc khi vao lop
+    Dap an    : Bạn đã thực hiện nhiều phương pháp học, từ việc áp dụng kỹ thuật pomodoro (chia công việc thành các khoảng thời gian giống nhau) đến việc vẽ sơ đồ tư duy và đọc tài liệu trước khi vào lớp.
+    Mo hinh   : Bạn đã thực hiện nhiều phương pháp học từ việc áp dụng kỹ thuật Algodoro, chia công việc thành các khoảng thời gian giống nhau đến việc vẽ sơ đồ tư duy và đọc tài liệu trước khi vào lớp.
+
+[10] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giam doc dhqghcm nhan xet rang chuong trinh sinh vien 5 tot la mot minh hoa dien hinh cho su menh cua dhqghcm trong cong tac dao tao va phat trien nhan tai huong toi su hoan thien cua con nguoi
+    Dap an    : Giám đốc ĐHQG-HCM nhận xét rằng chương trình Sinh viên 5 tốt là một minh họa điển hình cho sứ mệnh của ĐHQG-HCM trong công tác đào tạo và phát triển nhân tài, hướng tới sự hoàn thiện của con người.
+    Mo hinh   : Giám đốc ĐHQG-HCM nhận xét rằng chương trình 'Sinh viên 5 tốt' là một minh điển hình cho sứ mệnh của ĐHQg-HCM trong công tác đào tạo và phát triển nhân tài, hướng tới sự hoàn thiện của con người.
+
+[11] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : {sentence pgs ts vu hai quan cho hay rang chuong trinh giai thuong eureka dang phat trien khong ngung trong khi dat nuoc dang dung truoc nhung kho khan va co hoi cung nhu thach thuc }
+    Dap an    : {'Sentence': 'PGS. TS Vũ Hải Quân cho hay rằng chương trình Giải thưởng Euréka đang phát triển không ngừng, trong khi đất nước đang đứng trước những khó khăn và cơ hội cũng như thách thức. '}
+    Mo hinh   : {'Sentence': 'PGS. TS Vũ Hải Quân cho hay rằng chương trình giải thưởng Eureka đang phát triển không ngừng, trong khi đất nước đang đứng trước những khó khăn và cơ hội cũng như thách thức. '}
+
+[12] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lan nay 02 ca nhan tre da co thanh tich noi bat trong so can bo
+    Dap an    : Lần này, 02 cá nhân trẻ đã có thành tích nổi bật trong số cán bộ.
+    Mo hinh   : Lần này, 02 cá nhân trẻ đã có thành tích nổi bật trong số cán bộ.
+
+[13] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cu nguoi tham gia dao tao trong va ngoai nuoc tang cuong thu nhap cho nguoi lao dong
+    Dap an    : Cử người tham gia đào tạo trong và ngoài nước, tăng cường thu nhập cho người lao động.
+    Mo hinh   : Cử người tham gia đào tạo trong và ngoài nước; tăng cường thu nhập cho người lao động
+
+[14] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truong se to chuc mot trai he mang ten uit algo bootcamp 2023 cho cac hoc sinh dat giai trong cac ky thi quoc gia
+    Dap an    : Trường sẽ tổ chức một trại hè mang tên 'UIT ALGO BOOTCAMP 2023' cho các học sinh đạt giải trong các kỳ thi quốc gia.
+    Mo hinh   : Trường sẽ tổ chức một trại hè mang tên UIT Algo Bootcamp 2023 cho các học sinh đạt giải trong các kỳ thi quốc gia.
+
+[15] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : kns love_is_pain co ke hoach dung o vi tri cao nhat trong ky thi sap toi sang ngay 06122023 tai truong dai hoc khoa hoc
+    Dap an    : KNS. Love_is_pain có kế hoạch đứng ở vị trí cao nhất trong kỳ thi sắp tới. Sáng ngày 06/12/2023 tại Trường Đại học Khoa học.
+    Mo hinh   : KMS Lovelines Residence có kế hoạch đứng ở vị trí cao nhất trong kỳ thi sắp tới, sáng ngày 06/12/2023, tại Trường Đại học Khoa học.
+
+[16] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ha van hoang va phan truong tri la mot phan cua doi uit
+    Dap an    : Hà Văn Hoàng và Phan Trường Trí là một phần của Đội UIT.
+    Mo hinh   : Hà Văn Hoàng và Phan Trường Trí là một phần của đội UIT.
+
+[17] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thieu kien thuc ve it la mot nguyen nhan va khong co nhieu su khuyen khich tu xung quanh cung la mot ly do
+    Dap an    : Thiếu kiến thức về IT là một nguyên nhân, và không có nhiều sự khuyến khích từ xung quanh cũng là một lý do.
+    Mo hinh   : Thiếu kiến thức về IT là một nguyên nhân và không có nhiều sự khuyến khích từ xung quanh cũng là một lý do.
+
+[18] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : su cham chi cua ban se thu hut thanh cong
+    Dap an    : Sự chăm chỉ của bạn sẽ thu hút thành công.
+    Mo hinh   : Sự chăm chỉ của bạn sẽ thu hút thành công.
+
+[19] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban se co co hoi hoc tap va trai nghiem trong mot moi truong tuyet voi tai uit
+    Dap an    : Bạn sẽ có cơ hội học tập và trải nghiệm trong một môi trường tuyệt vời tại UIT.
+    Mo hinh   : Bạn sẽ có cơ hội học tập và trải nghiệm trong một môi trường tuyệt vời tại UIT.
+
+[20] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : kien thuc nen tang duoc thay co giang day trong truong hoc
+    Dap an    : Kiến thức nền tảng được thầy cô giảng dạy trong trường học.
+    Mo hinh   : Kiến thức nền tảng được thầy cô giảng dạy trong trường học.
+
+[21] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : khi ban tham gia ho tro cong viec trong khoa ban se truc tiep hop tac voi cac thay co de tang cuong tinh can than
+    Dap an    : Khi bạn tham gia hỗ trợ công việc trong Khoa, bạn sẽ trực tiếp hợp tác với các thầy cô để tăng cường tính cẩn thận.
+    Mo hinh   : Khi bạn tham gia hỗ trợ công việc trong Khoa, bạn sẽ trực tiếp hợp tác với các thầy cô để tăng cường tính cẩn thận.
+
+[22] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm on the topic of training size
+    Dap an    : HCM; on the topic of training size.
+    Mo hinh   : HCM. On the topic of 'Training cỡ'.
+
+[23] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoat dong cua uit lien quan den nghien cuu va chuyen giao cong nghe
+    Dap an    : Hoạt động của UIT liên quan đến nghiên cứu và chuyển giao công nghệ.
+    Mo hinh   : Hoạt động của UIT liên quan đến nghiên cứu và chuyển giao công nghệ.
+
+[24] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong phien bao cao chinh tai hoi thao triet duoc ban to chuc moi de trinh bay giai phap cua minh
+    Dap an    : Trong phiên báo cáo chính tại hội thảo, Triết được Ban Tổ Chức mời để trình bày giải pháp của mình.
+    Mo hinh   : Trong phiên báo cáo chính tại hội thảo, Triết được ban tổ chức mời để trình bày giải pháp của mình.
+
+[25] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : suc khoe tinh than va cuoc song sinh vien thong tin hinh anh le hoai dhqghcm chi tiet co the xem tai truong dai hoc cong nghe thong tin la mot co so dao tao dai hoc
+    Dap an    : Sức khỏe tinh thần và cuộc sống sinh viên. Thông tin, hình ảnh: Lê Hoài - ĐHQG-HCM. Chi tiết có thể xem tại: Trường Đại học Công nghệ Thông tin là một cơ sở đào tạo đại học.
+    Mo hinh   : Sức tinh thần và cuộc sống sinh viên. Thông tin hình ảnh Lê Hoài, ĐHQG-HCM. Chi tiết có thể xem tại: Trường Đại học Công nghệ Thông tin là một cơ sở đào tạo đại học.
+
+[26] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mot so van de bao gom chien luoc khoi nghiep cho hoc sinh da duoc trao doi giua cac bao cao vien va cu toa
+    Dap an    : Một số vấn đề, bao gồm chiến lược khởi nghiệp cho học sinh, đã được trao đổi giữa các báo cáo viên và cử tọa.
+    Mo hinh   : Một số vấn đề, bao gồm chiến lược khởi nghiệp cho học sinh, đã được trao đổi giữa các báo cáo viên và cư.
+
+[27] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ve thiet ke vi mach ban co kien thuc chuyen sau lap trinh may tinh
+    Dap an    : Về thiết kế vi mạch, bạn có kiến thức chuyên sâu; Lập trình, Máy tính.
+    Mo hinh   : Về thiết kế vi mạch, bạn có kiến thức chuyên sâu lập trình máy tính.
+
+[28] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nganh khoa hoc may tinh va ky thuat phan mem hien co 323 sinh vien
+    Dap an    : Ngành Khoa học Máy tính và Kỹ thuật Phần mềm hiện có 323 sinh viên.
+    Mo hinh   : Ngành Khoa học máy tính và Kỹ thuật phần mềm hiện có 323 sinh viên.
+
+[29] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : huong giang cho hay rang gan nhu tat ca cac tai lieu hoc thuat co da doc deu la tieng anh va tai lieu cung khong phong phu
+    Dap an    : Hương Giang cho hay rằng gần như tất cả các tài liệu học thuật cô đã đọc đều là tiếng Anh, và tài liệu cũng không phong phú.
+    Mo hinh   : Hương Giang cho hay rằng gần như tất cả các tài liệu học thuật cô đã đọc đều là tiếng Anh, và tài liệu cũng không phong phú.
+
+[30] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyen trong chinh hom nay nhan bang tien si tu dhqghcm dieu nay chung to su kien tri va long say me khoa hoc da giup em vuot qua nhung kho khan de tro thanh mot nha khoa hoc
+    Dap an    : Nguyễn Trọng Chỉnh hôm nay nhận bằng Tiến sĩ từ ĐHQG-HCM, điều này chứng tỏ sự kiên trì và lòng say mê khoa học đã giúp em vượt qua những khó khăn để trở thành một nhà khoa học.
+    Mo hinh   : Nguyễn Trọng Chính hôm nay nhận bằng Tiến sĩ từ ĐHQG-HCM, điều này chứng tỏ sự kiên trì và lòng say mê khoa học đã giúp em vượt qua những khó khăn để trở thành một nhà khoa học.
+
+[31] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoc sinh dau tien cua chuong trinh giao duc pho thong moi se hoan thanh tot nghiep thpt
+    Dap an    : Học sinh đầu tiên của Chương trình giáo dục phổ thông mới sẽ hoàn thành tốt nghiệp THPT.
+    Mo hinh   : Học sinh đầu tiên của chương trình giáo dục phổ thông mới sẽ hoàn thành tốt nghiệp THPT.
+
+[32] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : den nam 2023 tong so truong dai hoc la 97
+    Dap an    : Đến năm 2023, tổng số trường đại học là 97.
+    Mo hinh   : Đến năm 2023, tổng số trường đại học là 97.
+
+[33] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gom co bao cao so ket 3 nam thuc hien de an vnu 100 giai doan 20212025 ts nguyen quoc chinh giam doc trung tam khao thi va danh gia chat luong dao tao dhqghcm
+    Dap an    : Gồm có: Báo cáo sơ kết 3 năm thực hiện Đề án VNU 100 giai đoạn 2021-2025 (TS Nguyễn Quốc Chính - Giám đốc Trung tâm Khảo thí và Đánh giá Chất lượng Đào tạo ĐHQG-HCM);
+    Mo hinh   : Gồm có: Báo cáo số kết 3 năm thực hiện Đề án VNU 100 giai đoạn 2021-2025; TS Nguyễn Quốc Chính - Giám đốc Trung tâm Khảo thí và Đánh giá chất lượng đào tạo ĐHQG-HCM.
+
+[34] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : trong so 4 linh vuc mui nhon ky thuat co khi va co ky thuat bao gom may tinh va cong nghe thong tin cung voi kinh doanh va quan ly
+    Dap an    : Trong số 4 lĩnh vực mũi nhọn, kỹ thuật cơ khí và cơ kỹ thuật bao gồm máy tính và công nghệ thông tin, cùng với kinh doanh và quản lý.
+    Mo hinh   : Trong số 4 lĩnh vực mũi nhọn, kỹ thuật cơ khí và cơ kỹ thuật bao gồm máy tính và công nghệ thông tin, cùng với kinh doanh và quản lý.
+
+[35] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chuyen vien phong bao dam chat luong giao duc & khao thi ong nguyen duc hung goi y rang dhqghcm nen co chinh sach hoc bong rieng cho sinh vien quoc te
+    Dap an    : Chuyên viên Phòng Bảo đảm Chất lượng Giáo dục & Khảo thí, ông Nguyễn Đức Hùng, gợi ý rằng ĐHQG-HCM nên có chính sách học bổng riêng cho sinh viên quốc tế.
+    Mo hinh   : Chuyên viên Phòng Bảo đảm chất lượng giáo dục & Khảo thí, ông Nguyễn Đức Hùng, gợi ý rằng ĐHQG-HCM nên có chính sách học bổng riêng cho sinh viên quốc tế.
+
+[36] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : prof dr ulrich frank who holds the chair of information systems and enterprise modelling is at technische university braunschweig germany
+    Dap an    : Prof. Dr. Ulrich Frank, who holds the Chair of Information Systems and Enterprise Modelling, is at Technische University Braunschweig, Germany.
+    Mo hinh   : Prof. Dr. Ulrich Frank, who holds the chair of Information Systems and enterprise Modelling, is at Technische University braun-Schlaig (Germany).
+
+[37] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dung la khi ta co tinh yeu manh liet voi mot dieu gi do ta se tim ra cach de chung minh rang nhung thu ta yeu dep den bat ngo khong can phai den nhung dia diem xa xoi de ghi lai khoanh khac
+    Dap an    : Đúng là khi ta có tình yêu mãnh liệt với một điều gì đó, ta sẽ tìm ra cách để chứng minh rằng những thứ ta yêu đẹp đến bất ngờ. Không cần phải đến những địa điểm xa xôi để ghi lại khoảnh khắc.
+    Mo hinh   : Đúng là khi ta có tình yêu mãnh liệt với một điều gì đó, ta sẽ tìm ra cách để chứng minh rằng những thứ ta yêu đẹp đến bất ngờ, không cần phải đến những địa điểm xa xôi để ghi lại khoảnh khắc.
+
+[38] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : van de lon nhat ma truong phai giai quyet la phan bo thoi gian sao cho hop ly de hoan thanh muc tieu da de ra nam sinh 2k1 tam su “khi thuc hien bai nghien cuu vao thoi diem nay
+    Dap an    : Vấn đề lớn nhất mà Trường phải giải quyết là phân bổ thời gian sao cho hợp lý để hoàn thành mục tiêu đã đề ra. Nam sinh 2k1 tâm sự: “Khi thực hiện bài nghiên cứu vào thời điểm này.
+    Mo hinh   : Vấn đề lớn nhất mà Trường phải giải quyết là phân bổ thời gian sao cho hợp lý để hoàn thành mục tiêu đã đề ra. Nam sinh 2k1 tâm sự: “Khi thực hiện bài nghiên cứu vào thời điểm này.
+
+[39] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban can phai huan luyen mo hinh lien tuc trong 2 3 ngay de co duoc ket qua tot nhat cho du an do nhieu mon hoc yeu cau
+    Dap an    : Bạn cần phải huấn luyện mô hình liên tục trong 2 - 3 ngày để có được kết quả tốt nhất cho dự án, do nhiều môn học yêu cầu.
+    Mo hinh   : Bạn cần phải huấn luyện mô hình liên tục trong 2, 3 ngày để có được kết quả tốt nhất cho dự án, do nhiều môn học yêu cầu.
+
+[40] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec theo hoc thac si tai uit la dieu toi san long lam vi toi tin rang do se mang lai trai nghiem tuyet voi
+    Dap an    : Việc theo học thạc sĩ tại UIT là điều tôi sẵn lòng làm vì tôi tin rằng đó sẽ mang lại trải nghiệm tuyệt vời.
+    Mo hinh   : Việc theo học thạc sĩ tại UIT là điều tôi sẵn lòng làm, vì tôi tin rằng đó sẽ mang lại trải nghiệm tuyệt vời.
+
+[41] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vinh danh quy thay co da cong hien thoi gian cho su nghiep giao duc mot can bo nhan ky niem chuong vi su nghiep to chuc nha nuoc
+    Dap an    : Vinh danh quý Thầy, Cô đã cống hiến thời gian cho sự nghiệp giáo dục, một cán bộ nhận kỷ niệm chương Vì sự nghiệp tổ chức Nhà nước.
+    Mo hinh   : Vinh danh Quý Thầy Cô đã cống hiến thời gian cho sự nghiệp giáo dục, một cán bộ nhận kỷ niệm chương vì sự nghiệp tổ chức Nhà nước.
+
+[42] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : bo kh&cn va bo tai chinh
+    Dap an    : Bộ KH&CN và Bộ Tài chính.
+    Mo hinh   : Bộ KH&CN và Bộ Tài chính.
+
+[43] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nam nay dhqghcm duoc cap kinh phi tren 200 ty nhung so tien duoc phe duyet chi khoang 140 ty khong du cho cac nha khoa hoc tien hanh nghien cuu
+    Dap an    : Năm nay, ĐHQG-HCM được cấp kinh phí trên 200 tỷ, nhưng số tiền được phê duyệt chỉ khoảng 140 tỷ, không đủ cho các nhà khoa học tiến hành nghiên cứu.
+    Mo hinh   : Năm nay, ĐHQG-HCM được cấp kinh phí trên 200 tỷ, nhưng số tiền được phê duyệt chỉ khoảng 140 tỷ, không đủ cho các nhà khoa học tiến hành nghiên cứu.
+
+[44] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac hoat dong phu hop voi co che thi truong theo dinh huong xhcn cua viet nam
+    Dap an    : Các hoạt động phù hợp với cơ chế thị trường theo định hướng XHCN của Việt Nam.
+    Mo hinh   : Các hoạt động phù hợp với cơ chế thị trường theo định hướng SHCN của Việt Nam.
+
+[45] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : co gang phat trien ban than qua viec hoc
+    Dap an    : Cố gắng phát triển bản thân qua việc học.
+    Mo hinh   : Cố gắng phát triển bản thân qua việc học.
+
+[46] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cu the la trong viec giao viec
+    Dap an    : Cụ thể là trong việc giao việc.
+    Mo hinh   : Cụ thể là trong việc giao việc.
+
+[47] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : asiin la mot to chuc co uy tin trong he thong hiep hoi kiem dinh chat luong dai hoc chau au thuc hien cac hoat dong danh gia
+    Dap an    : ASIIN là một tổ chức có uy tín trong hệ thống Hiệp hội kiểm định chất lượng đại học châu Âu, thực hiện các hoạt động đánh giá.
+    Mo hinh   : ASIIN là một tổ chức có uy tín trong hệ thống Hiệp hội kiểm định chất lượng đại học châu Âu, thực hiện các hoạt động đánh giá.
+
+[48] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : chia se ve kinh nghiem thuc hien phuong phap kiem tra va danh gia cdr ctdt tai khoa ky thuat may tinh
+    Dap an    : Chia sẻ về kinh nghiệm thực hiện phương pháp kiểm tra và đánh giá CĐR CTĐT tại khoa Kỹ thuật Máy tính.
+    Mo hinh   : Chia sẻ về kinh nghiệm thực hiện phương pháp kiểm tra và đánh giá CĐR CTĐT tại khoa Kỹ thuật Máy tính.
+
+[49] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo thong tin nhung nguoi ban xung quanh khanh quynh cung dang gap phai kho khan trong van de nay
+    Dap an    : Theo thông tin, những người bạn xung quanh Khánh Quỳnh cũng đang gặp phải khó khăn trong vấn đề này.
+    Mo hinh   : Theo thông tin, những người bạn xung quanh Khánh Quỳnh cũng đang gặp phải khó khăn trong vấn đề này.
+
+[50] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tu duy lap trinh la dieu can thiet cho nguoi hoc trong linh vuc cong nghe thong tin dac biet la khi ap dung tu duy he thong va phan tich
+    Dap an    : Tư duy lập trình là điều cần thiết cho người học trong lĩnh vực công nghệ thông tin, đặc biệt là khi áp dụng tư duy hệ thống và phân tích.
+    Mo hinh   : Tư duy lập trình là điều cần thiết cho người học trong lĩnh vực công nghệ thông tin, đặc biệt là khi áp dụng tư duy hệ thống và phân tích.
+
+[51] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : doanh nghiep theo pgs ts vu hai quan da duoc trien khai trong 4 nam
+    Dap an    : Doanh nghiệp, theo PGS. TS Vũ Hải Quân, đã được triển khai trong 4 năm.
+    Mo hinh   : Doanh nghiệp, theo PGS. TS Vũ Hải Quân, đã được triển khai trong 4 năm.
+
+[52] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lien ket bai viet dung truong dai hoc cong nghe thong tin la mot trung tam dao tao dai hoc va sau dai hoc voi nguon nhan luc chat luong cao
+    Dap an    : Liên kết bài viết: dung: - Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học và sau đại học, với nguồn nhân lực chất lượng cao.
+    Mo hinh   : Liên kết bài viết: dung: - Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học và sau đại học, với nguồn nhân lực chất lượng cao.
+
+[53] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : toi khuyen cac ban rang hay don nhan sai lam vi chi khi co sai sot ban moi nhan ra dieu can lam va hay luon hoi
+    Dap an    : Tôi khuyên các bạn rằng 'hãy đón nhận sai lầm', vì chỉ khi có sai sót, bạn mới nhận ra điều cần làm và 'hãy luôn hỏi'.
+    Mo hinh   : Tôi khuyên các bạn rằng hãy đón nhận sai lầm, vì chỉ khi có sai sót, bạn mới nhận ra điều cần làm và hãy luôn hỏi.
+
+[54] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dhqghcm va cac doanh nghiep hoa ky da co cuoc thao luan ve tiem nang hop tac trong tuong lai trong linh vuc ky thuat y sinh
+    Dap an    : ĐHQG-HCM và các doanh nghiệp Hoa Kỳ đã có cuộc thảo luận về tiềm năng hợp tác trong tương lai trong lĩnh vực kỹ thuật y sinh.
+    Mo hinh   : ĐHQG-HCM và các doanh nghiệp Hoa Kỳ đã có cuộc thảo luận về tiềm năng hợp tác trong tương lai trong lĩnh vực kỹ thuật y sinh.
+
+[55] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phien trong the dai hoi dien ra vao sang ngay 05112023 da thanh cong tot dep trong nhiem ky 2023 – 2028
+    Dap an    : Phiên trọng thể Đại hội diễn ra vào sáng ngày 05/11/2023 đã thành công tốt đẹp trong nhiệm kỳ 2023 – 2028.
+    Mo hinh   : Phiên trọng thể Đại hội diễn ra vào sáng ngày 05/11/2023, đã thành công tốt đẹp trong nhiệm kỳ 2023 – 2028.
+
+[56] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm khoa hoc nay la cau noi cho sinh vien den gan hon voi kien thuc thuc te ve it va scrum mo ra co hoi nghe nghiep tai cac doanh nghiep trong va ngoai nuoc
+    Dap an    : HCM. Khóa học này là cầu nối cho sinh viên đến gần hơn với kiến thức thực tế về IT và Scrum, mở ra cơ hội nghề nghiệp tại các doanh nghiệp trong và ngoài nước.
+    Mo hinh   : HCM. học này là cầu nối cho sinh viên đến gần hơn với kiến thức thực tế về IT và SCRUM, mở ra cơ hội nghề nghiệp tại các doanh nghiệp trong và ngoài nước.
+
+[57] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vao ngay 511 truong dai hoc cong nghe thong tin dhqghcm voi doi uit nth holy grail da xuat sac gianh giai nhi tai cuoc thi lap trinh quoc te icpc vietnam2023
+    Dap an    : Vào ngày 5/11, Trường Đại học Công nghệ Thông tin ĐHQG-HCM với đội UIT. NTH. Holy. Grail đã xuất sắc giành giải Nhì tại Cuộc thi lập trình quốc tế ICPC Vietnam-2023.
+    Mo hinh   : Vào ngày 5/11, Trường Đại học Công nghệ Thông tin ĐHQG-HCM với đội UIT. NTH Holy Grail đã xuất sắc giành giải Nhì tại cuộc thi lập trình quốc tế ICPC Vietnam2023.
+
+[58] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chinh tac gia vo tran dai 19521308 khdl 2019
+    Dap an    : Chính tác giả: Võ Trần Đại - 19521308 - KHDL 2019.
+    Mo hinh   : Chính tác giả Võ Trần Đại, 19521308, KHDL 2019
+
+[59] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi thao dien dan hang nam cho nhung nguoi nghien cuu co su tham gia phoi hop cua cau lac bo cac khoatruongvien cntttt viet nam fisu
+    Dap an    : Hội thảo, diễn đàn hàng năm cho những người nghiên cứu, có sự tham gia phối hợp của Câu lạc bộ các Khoa-Trường-Viện CNTT-TT Việt Nam (FISU).
+    Mo hinh   : Hội thảo diễn đàn hàng năm cho những người nghiên cứu có sự tham gia phối hợp của Câu lạc bộ các Khoa/Trường/Viện CNTT Việt Nam (FUS).
+
+[60] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban to chuc da cong bo cac de bai theo thu tu
+    Dap an    : Ban tổ chức đã công bố các đề bài theo thứ tự.
+    Mo hinh   : Ban Tổ chức đã công bố các đề bài theo thứ tự.
+
+[61] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyen vinh khanh voi me la giao vien day tin hoc da the hien dam me voi tin hoc tu khi con nho
+    Dap an    : Nguyễn Vinh Khánh, với mẹ là giáo viên dạy Tin học, đã thể hiện đam mê với tin học từ khi còn nhỏ.
+    Mo hinh   : Nguyễn Vinh Khánh, với mẹ là giáo viên dạy tin học, đã thể hiện đam mê với tin học từ khi còn nhỏ.
+
+[62] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : mot niem vinh du lon dong thoi cung la mot trach nhiem nang ne
+    Dap an    : Một niềm vinh dự lớn, đồng thời cũng là một trách nhiệm nặng nề.
+    Mo hinh   : Một niềm vinh dự lớn, đồng thời cũng là một trách nhiệm nặng nề.
+
+[63] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cap do tien tien cho khoang 1
+    Dap an    : Cấp độ tiên tiến cho khoảng 1.
+    Mo hinh   : Cấp độ tiên tiến cho khoảng 1.
+
+[64] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bo truong nguyen chi dung thuoc bo ke hoach va dau tu da tham gia tham gian hang trien lam cua dhqghcm cung voi cac dai bieu quoc te va trong nuoc
+    Dap an    : Bộ trưởng Nguyễn Chí Dũng thuộc Bộ Kế hoạch và Đầu tư đã tham gia thăm gian hàng triển lãm của ĐHQG-HCM cùng với các đại biểu quốc tế và trong nước.
+    Mo hinh   : Bộ trưởng Nguyễn Chí Dũng, thuộc Bộ Kế hoạch và Đầu tư, đã tham gia thăm gian hàng triển lãm của ĐHQG-HCM cùng với các đại biểu quốc tế và trong nước.
+
+[65] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoi tu gan 300 doanh nghiep cong nghe hang dau tu ca nuoc va the gioi
+    Dap an    : Hội tụ gần 300 doanh nghiệp công nghệ hàng đầu từ cả nước và thế giới.
+    Mo hinh   : Hội tụ gần 300 doanh nghiệp công nghệ hàng đầu từ cả nước và thế giới.
+
+[66] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau 34 nam hoat dong chung toi da tap trung vao linh vuc giao duc va phat trien cong dong o viet nam va mong co
+    Dap an    : Sau 34 năm hoạt động, chúng tôi đã tập trung vào lĩnh vực giáo dục và phát triển cộng đồng ở Việt Nam và Mông Cổ.
+    Mo hinh   : Sau 34 năm hoạt động, chúng tôi đã tập trung vào lĩnh vực giáo dục và phát triển cộng đồng ở Việt Nam và mong có.
+
+[67] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban da nhan duoc su ho tro tu uit nhu the nao trong qua trinh hoc tap va nghien cuu bai bao nay duoc phat trien tu mot y tuong cua mon do an khoa hoc du lieu
+    Dap an    : Bạn đã nhận được sự hỗ trợ từ UIT như thế nào trong quá trình học tập và nghiên cứu? Bài báo này được phát triển từ một ý tưởng của môn Đồ án Khoa học Dữ liệu.
+    Mo hinh   : Bạn đã nhận được sự hỗ trợ từ UIT như thế nào trong quá trình học tập và nghiên cứu? Bài báo này được phát triển từ một ý tưởng của môn Đồ án Khoa học Dữ liệu.
+
+[68] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo phien an dhqghcm truong dai hoc cong nghe thong tin la noi cung cap nguon nhan luc chat luong cao thong qua dao tao dai hoc va sau dai hoc thong tin chi tiet co the xem tai day
+    Dap an    : Theo Phiên An - ĐHQG-HCM, Trường Đại học Công nghệ Thông tin là nơi cung cấp nguồn nhân lực chất lượng cao thông qua đào tạo đại học và sau đại học. Thông tin chi tiết có thể xem tại đây.
+    Mo hinh   : Theo Phiên An - ĐHQG-HCM, Trường Đại học Công nghệ Thông tin là nơi cung cấp nguồn nhân lực chất lượng cao thông qua đào tạo đại học và sau đại học. Thông tin chi tiết có thể xem tại đây.
+
+[69] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trinh bay thong tin ve du an nghien cuu cac giai phap idps thao luan ve muc dich cua chuong trinh hop tac nghien cuu khoa hoc giua uit va bosch
+    Dap an    : Trình bày thông tin về dự án nghiên cứu các giải pháp IDPS; thảo luận về mục đích của chương trình hợp tác nghiên cứu khoa học giữa UIT và Bosch.
+    Mo hinh   : Trình bày thông tin về dự án nghiên cứu: Các giải pháp IDC. Thảo luận về mục đích của chương trình hợp tác nghiên cứu khoa học giữa UIT và Bosch.
+
+[70] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : phan gioi thieu ve chuyen de doi moi sang tao trong nghien cuu khoa hoc da duoc thuc hien cac dai bieu da thao luan ve ket qua cua hoat dong doi moi sang tao tai don vi
+    Dap an    : Phần giới thiệu về chuyên đề Đổi mới sáng tạo trong nghiên cứu khoa học đã được thực hiện. Các đại biểu đã thảo luận về kết quả của hoạt động đổi mới sáng tạo tại đơn vị.
+    Mo hinh   : Phần giới thiệu về 'Chuyển đề đổi mới sáng tạo trong nghiên cứu khoa học' đã được thực hiện. Các đại biểu đã thảo luận về kết quả của hoạt động đổi mới sang tạo tại đơn vị.
+
+[71] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : du co kho khan nhung voi su giup do cua ban be ca hai ban da co the nam bat kien thuc o truong de tap trung vao nghien cuu
+    Dap an    : Dù có khó khăn, nhưng với sự giúp đỡ của bạn bè, cả hai bạn đã có thể nắm bắt kiến thức ở trường để tập trung vào nghiên cứu.
+    Mo hinh   : Dù có khó khăn, nhưng với sự giúp đỡ của bạn bè, cả hai bạn đã có thể nắm bắt kiến thức ở trường để tập trung vào nghiên cứu.
+
+[72] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lam viec nhom de phat trien ban than
+    Dap an    : Làm việc nhóm để phát triển bản thân.
+    Mo hinh   : Làm việc nhóm để phát triển bản thân.
+
+[73] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : minh da danh thoi gian de kham pha van hoa cong viec cua han quoc va hoc mot so tu tieng han
+    Dap an    : Mình đã dành thời gian để khám phá văn hóa công việc của Hàn Quốc và học một số từ tiếng Hàn.
+    Mo hinh   : Mình đã dành thời gian để khám phá văn hóa công việc của Hàn Quốc và học một số từ tiếng Hàn.
+
+[74] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqg ha noi 4560 nhom
+    Dap an    : ĐHQG Hà Nội (45-60 nhóm).
+    Mo hinh   : ĐHQG Hà Nội, 4560 nhóm.
+
+[75] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hoi nghi nay duoc to chuc voi muc dich nang cao ky nang va nghiep vu cho doi ngu can bo cong doan trong cong tac quan ly va hieu biet ve cac quy dinh
+    Dap an    : Hội nghị này được tổ chức với mục đích nâng cao kỹ năng và nghiệp vụ cho đội ngũ cán bộ Công đoàn trong công tác quản lý và hiểu biết về các quy định.
+    Mo hinh   : Hội nghị này được tổ chức với mục đích nâng cao kỹ năng và nghiệp vụ cho đội ngũ cán bộ Công đoàn trong công tác quản lý và hiểu biết về các quy định.
+
+[76] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngo duc thanh nguoi lanh dao khoa khoa hoc may tinh
+    Dap an    : Ngô Đức Thành, người lãnh đạo Khoa Khoa học máy tính.
+    Mo hinh   : Ngô Đức Thành, người lãnh đạo Khoa Khoa học Máy tính.
+
+[77] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thong tin chi tiet ve tuyen sinh uit duoc cung cap boi theo ngoc lan thuy linh tai truong dai hoc cong nghe thong tin noi dao tao nguon nhan luc chat luong cao o ca bac dai hoc va sau dai hoc
+    Dap an    : Thông tin chi tiết về tuyển sinh UIT được cung cấp bởi Theo Ngọc Lân - Thuỳ Linh tại Trường Đại học Công nghệ Thông tin, nơi đào tạo nguồn nhân lực chất lượng cao ở cả bậc đại học và sau đại học.
+    Mo hinh   : Thông tin chi tiết về tuyển sinh UIT được cung cấp bởi Theo Ngọc Lân - Thùy Linh tại Trường Đại học Công nghệ Thông tin, nơi đào tạo nguồn nhân lực chất lượng cao ở cả bậc đại học và sau đại học.
+
+[78] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi thi thu thach tri tue nhan tao ai challenge nam 2023 tai thanh pho ho chi minh da to chuc le tong ket va trao giai tai khach san tan son nhat pavillon dien ra trang trong trong khuon kho tuan le huong ung ngay chuyen doi so quoc gia 1010 sau 3 thang hoi thi ai challenge hcmc 2023 da di den hoi ket
+    Dap an    : Hội thi Thử thách trí tuệ nhân tạo (AI Challenge) năm 2023 tại thành phố Hồ Chí Minh đã tổ chức lễ tổng kết và trao giải tại khách sạn Tân Sơn Nhất Pavillon, diễn ra trang trọng trong khuôn khổ tuần lễ hưởng ứng Ngày chuyển đổi số quốc gia 10/10. Sau 3 tháng, Hội thi AI Challenge HCMC 2023 đã đi đến hồi kết.
+    Mo hinh   : Hội thi thử thách trí tuệ nhân tạo (AI Challenge) năm 2023 tại Thành phố Hồ Chí Minh đã tổ chức lễ tổng kết và trao giải tại Khách sạn Tân Sơn Nhất (Singapore), diễn ra trang trọng trong khuôn khổ tuần lễ hưởng ứng Ngày chuyển đổi số quốc gia 10/10. Sau 3 tháng, Hội thi AI Challenge HCMC 2023 đã đi đến hội kết.
+
+[79] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chuc mung tat ca cac ban vao thang 11 truong dai hoc cong nghe thong tin la trung tam dao tao dai hoc va sau dai hoc cung cap nguon nhan luc chat luong cao
+    Dap an    : Chúc mừng tất cả các bạn vào tháng 11! Trường Đại học Công nghệ Thông tin là trung tâm đào tạo đại học và sau đại học, cung cấp nguồn nhân lực chất lượng cao.
+    Mo hinh   : Chúc mừng tất cả các bạn vào tháng 11, Trường Đại học Công nghệ Thông tin là trung tâm đào tạo đại học và sau đại học, cung cấp nguồn nhân lực chất lượng cao.
+
+[80] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chung toi mong muon cuoc thi se giup cac ban hoc sinh nuoi duong niem dam me nghien cuu va hoc tap ve tri tue nhan tao
+    Dap an    : Chúng tôi mong muốn cuộc thi sẽ giúp các bạn học sinh nuôi dưỡng niềm đam mê nghiên cứu và học tập về trí tuệ nhân tạo.
+    Mo hinh   : Chúng tôi mong muốn cuộc thi sẽ giúp các bạn học sinh nuôi dưỡng niềm đam mê nghiên cứu và học tập về Trí tuệ nhân tạo.
+
+[81] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac giao su da tham du hoi nghi quoc te mapr 2023 lan thu sau ve phan tich da phuong tien va nhan dang mau
+    Dap an    : Các Giáo sư đã tham dự hội nghị quốc tế MAPR 2023, lần thứ sáu về phân tích đa phương tiện và nhận dạng mẫu.
+    Mo hinh   : Các giáo sư đã tham dự Hội nghị quốc tế MUR 2023 lần thứ sáu về Phân tích đa phương tiện và nhận dạng mẫu.
+
+[82] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khuyen khich ban than de gan bo voi thuc te va phat trien trong tuong lai hieu nghia dang tim hieu ve bai toan hoc da phuong thuc trong tieng viet
+    Dap an    : Khuyến khích bản thân để gắn bó với thực tế và phát triển trong tương lai. Hiếu Nghĩa đang tìm hiểu về bài toán Học đa phương thức trong tiếng Việt.
+    Mo hinh   : Khuyến khích bản thân để gắn bó với thực tế và phát triển trong tương lai. Hiểu Nghĩa đang tìm hiểu về bài toán học đa phương thức trong tiếng Việt.
+
+[83] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : quang huy khong ngung tham gia tich cuc vao cac nghien cuu khoa hoc
+    Dap an    : Quang Huy không ngừng tham gia tích cực vào các nghiên cứu khoa học.
+    Mo hinh   : Quang Huy không ngừng tham gia tích cực vào các nghiên cứu khoa học.
+
+[84] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : doi da xac dinh muc tieu la no luc giu vung vi tri so 1 tai uit trong ca 3 vong dau va mang ve chien thang o vong thi quoc gia
+    Dap an    : Đội đã xác định mục tiêu là nỗ lực giữ vững vị trí số 1 tại UIT trong cả 3 vòng đấu và mang về chiến thắng ở vòng thi Quốc gia.
+    Mo hinh   : Đội đã xác định mục tiêu là nỗ lực giữ vững vị trí số 1 tại UIT trong cả 3 vòng đấu và mang về chiến thắng ở vòng thi quốc gia.
+
+[85] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : de di den da nang ho se duoc ho tro 6 trieu vnd cho chi phi di chuyen
+    Dap an    : Để đi đến Đà Nẵng, họ sẽ được hỗ trợ 6 triệu VND cho chi phí di chuyển.
+    Mo hinh   : Để đi đến Đà Nẵng, họ sẽ được hỗ trợ 6 triệu VND cho chi phí di chuyển.
+
+[86] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bat dau tu 12 den 18 thang 10 nguon phien an thong tin chi tiet truong dai hoc cong nghe thong tin la mot trung tam giao duc dai hoc
+    Dap an    : Bắt đầu từ 12 đến 18 tháng 10. Nguồn: Phiên An. Thông tin chi tiết: Trường Đại học Công nghệ Thông tin là một trung tâm giáo dục đại học.
+    Mo hinh   : Bắt đầu từ 12 đến 18 tháng 10, nguồn: Phiên An. Thông tin chi tiết: Trường Đại học Công nghệ Thông tin là một trung tâm giáo dục đại học.
+
+[87] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bai viet lien quan su kien uit career day hay ngay hoi sinh vien va doanh nghiep dien ra hang nam tai truong dh cong nghe thong tin dhqghcm
+    Dap an    : Bài viết liên quan: sự kiện UIT Career Day, hay Ngày hội Sinh viên và Doanh nghiệp, diễn ra hàng năm tại Trường ĐH Công nghệ Thông tin ĐHQG-HCM.
+    Mo hinh   : Bài viết liên quan: Sự kiện UIT Career Day, hay Ngày hội Sinh viên và Doanh nghiệp, diễn ra hàng năm tại Trường ĐH Công nghệ Thông tin ĐHQG-HCM.
+
+[88] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : sau khi danh gia nhieu yeu to lien quan den lab giang vien va moi truong hoc tap tai hosei
+    Dap an    : Sau khi đánh giá nhiều yếu tố liên quan đến lab, giảng viên và môi trường học tập tại Hosei.
+    Mo hinh   : Sau khi đánh giá nhiều yếu tố liên quan đến lab, giảng viên và môi trường học tập tại hosei.
+
+[89] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : them vao do viec xung ho cung rat khac biet giua cac nuoc
+    Dap an    : Thêm vào đó, việc xưng hô cũng rất khác biệt giữa các nước.
+    Mo hinh   : Thêm vào đó, việc xung hộ cũng rất khác biệt giữa các nước.
+
+[90] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai kuala lumpur malaysia cac bai bao khoa hoc duoc trinh bay tai hoi nghi deu tuan theo quy trinh binh duyet nghiem ngat de dam bao chat luong
+    Dap an    : Tại Kuala Lumpur, Malaysia, các bài báo khoa học được trình bày tại hội nghị đều tuân theo quy trình bình duyệt nghiêm ngặt để đảm bảo chất lượng.
+    Mo hinh   : Tại Kon Tum, Malaysia, các bài báo khoa học được trình bày tại hội nghị đều tuân theo quy trình bình duyệt nghiêm ngặt để đảm bảo chất lượng.
+
+[91] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : anh co the tim kiem co hoi nao de lam viec tai my nghien cuu va xuat ban cac bai bao hoi nghi bai bao tap chi trong khi hoc thac si
+    Dap an    : Anh có thể tìm kiếm cơ hội nào để làm việc tại Mỹ? Nghiên cứu và xuất bản các bài báo hội nghị, bài báo tạp chí trong khi học thạc sĩ.
+    Mo hinh   : Anh có thể tìm kiếm cơ hội nào để làm việc tại Mỹ, nghiên cứu và xuất bản các bài báo hội nghị, bài báo tạp chí trong khi học thạc sĩ?
+
+[92] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : kiem dinh chat luong cua cac phuong tien giao thong
+    Dap an    : Kiểm định chất lượng của các phương tiện giao thông.
+    Mo hinh   : Kiểm định chất lượng của các phương tiện giao thông.
+
+[93] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dieu thiet yeu nhat la sau khi da hoc hoi va phat trien khong ngung
+    Dap an    : Điều thiết yếu nhất là sau khi đã học hỏi và phát triển không ngừng.
+    Mo hinh   : Điều thiết yếu nhất là sau khi đã học hỏi và phát triển không ngừng.
+
+[94] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tham gia cac khoa hoc va hoi thao de giao luu voi cac chuyen gia va nha khoa hoc trong linh vuc cua ban la dieu rat quan trong mang luoi quan he se mo ra nhieu co hoi hoc tap va phat trien
+    Dap an    : Tham gia các khóa học và hội thảo để giao lưu với các chuyên gia và nhà khoa học trong lĩnh vực của bạn là điều rất quan trọng. Mạng lưới quan hệ sẽ mở ra nhiều cơ hội học tập và phát triển.
+    Mo hinh   : Tham gia các học và hội thảo để giao lưu với các chuyên gia và nhà khoa học trong lĩnh vực của bạn là điều rất quan trọng. Mạng lưới quan hệ sẽ mở ra nhiều cơ hội học tập và phát triển.
+
+[95] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : mot cuoc hop da duoc to chuc giua truong dai hoc cong nghe thong tin dhqghcm uit va dai hoc macquarie de thao luan ve hop tac
+    Dap an    : Một cuộc họp đã được tổ chức giữa Trường Đại học Công nghệ Thông tin ĐHQG-HCM (UIT) và Đại học Macquarie để thảo luận về hợp tác.
+    Mo hinh   : Một cuộc họp đã được tổ chức giữa Trường Đại học Công nghệ Thông tin, ĐHQG-HCM (UIT) và Đại học Macquarie để thảo luận về hợp tác.
+
+[96] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ban co nhu cau tim kiem mot cong viec voi thu nhap tot hon
+    Dap an    : Bạn có nhu cầu tìm kiếm một công việc với thu nhập tốt hơn.
+    Mo hinh   : Bạn có nhu cầu tìm kiếm một công việc với thu nhập tốt hơn.
+
+[97] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cach thuc tham gia cac khoa hoc
+    Dap an    : Cách thức tham gia các khóa học.
+    Mo hinh   : Cách thức tham gia các học.
+
+[98] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cuoc thi co cac track noi dung nhu hieu biet ngon ngu noi tieng viet slu ung dung di dong su dung ai samsung nhan dien chu viet tay tieng viet ocr toi uu hoa lo trinh tiki ngan hang su dung ai naver vietcombank
+    Dap an    : Cuộc thi có các track nội dung như: - Hiểu biết ngôn ngữ nói tiếng Việt (SLU) - Ứng dụng di động sử dụng AI (Samsung) - Nhận diện chữ viết tay tiếng Việt (OCR) - Tối ưu hóa lộ trình (TIKI) - Ngân hàng sử dụng AI, NAVER, Vietcombank.
+    Mo hinh   : Cuộc thi có cáctrack nội dung như: Hiểu biết ngôn ngữ nổi tiếng Việt (Tiếng Việt ứng dụng di động), Sử dụng AI (Samsung nhận diện chữ viết tay, Tiếng Việt OECD tối ưu hóa lộ trình), Tải ngân hàng sử dụng AI: Naver Việtcombank.
+
+[99] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : thong qua su kien nay cac nha nghien cuu tre da co co hoi de ket noi va xay dung moi quan he chuyen mon hoi nghi khoa hoc tre va nghien cuu sinh 2023 da thanh cong ruc ro trong viec thuc day sang tao va tien bo tri thuc trong cong dong nghien cuu tre tai uit
+    Dap an    : Thông qua sự kiện này, các nhà nghiên cứu trẻ đã có cơ hội để kết nối và xây dựng mối quan hệ chuyên môn. Hội nghị Khoa học Trẻ và Nghiên cứu Sinh 2023 đã thành công rực rỡ trong việc thúc đẩy sáng tạo và tiến bộ tri thức trong cộng đồng nghiên cứu trẻ tại UIT.
+    Mo hinh   : Thông qua sự kiện này, các nhà nghiên cứu trẻ đã có cơ hội để kết nối và xây dựng mối quan hệ chuyên môn. Hội nghị khoa học trẻ và nghiên cứu sinh 2023 đã thành công rực rỡ trong việc thúc đẩy sáng tạo và tiến bộ tri thức trong cộng đồng nghiên cứu Trẻ tại UIT.
+
+[100] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gs ts do phuc pho hieu truong truoc day
+    Dap an    : GS. TS. Đỗ Phúc - Phó Hiệu trưởng trước đây;
+    Mo hinh   : GS. TS Đỗ Phúc - Phó Hiệu trưởng trước đây.
+
+[101] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : {sentence lien ket den bai viet dung de ho tro nguoi dung }
+    Dap an    : {'Sentence': 'Liên kết đến bài viết: dung: Để hỗ trợ người dùng, '}
+    Mo hinh   : {'Sentence': 'Liên kết đến bài viết: dung: Để hỗ trợ người dùng. '}
+
+[102] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chu tri hoi thao voi muc dich thiet lap mot he sinh thai xanh va ben vung mot trong nhung nhiem vu quan trong cua chien luoc phat trien dhqghcm giai doan 20212030 la phat trien khu do thi dai hoc theo tieu chi xanh
+    Dap an    : Chủ trì hội thảo với mục đích thiết lập một hệ sinh thái xanh và bền vững. Một trong những nhiệm vụ quan trọng của Chiến lược phát triển ĐHQG-HCM giai đoạn 2021-2030 là phát triển khu đô thị đại học theo tiêu chí xanh.
+    Mo hinh   : Chủ trì hội thảo với mục đích thiết lập một hệ sinh thái xanh và bền vững. Một trong những nhiệm vụ quan trọng của chiến lược phát triển ĐHQG-HCM giai đoạn 2021-2030 là phát triển Khu đô thị đại học theo tiêu chí xanh.
+
+[103] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : pho giam doc trung tam quan ly va phat trien khu do thi tran viet thang da cho biet rang khu do thi dhqghcm la mot khu do thi mo voi nhieu loi vao
+    Dap an    : Phó Giám đốc Trung tâm Quản lý và Phát triển Khu Đô thị, Trần Việt Thắng, đã cho biết rằng Khu Đô thị ĐHQG-HCM là một khu đô thị mở với nhiều lối vào.
+    Mo hinh   : Phó Giám đốc Trung tâm Quản lý và Phát triển Khu đô thị, Trần Việt Thắng, đã cho biết rằng Khu Đô thị ĐHQG-HCM là một khu đô thị mở với nhiều lối vào.
+
+[104] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nam le khac dinh to nguyen trung
+    Dap an    : Nam Lê Khắc, Đỉnh Tô Nguyên Trung.
+    Mo hinh   : Nam Lê Khánh Định, Tô Nguyễn Trung.
+
+[105] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : doi p3 se phai doi mat voi nhieu ap luc trong viec giu vung thanh tich nhung cac thi sinh van phai co gang
+    Dap an    : Đội P3 sẽ phải đối mặt với nhiều áp lực trong việc giữ vững thành tích, nhưng các thí sinh vẫn phải cố gắng.
+    Mo hinh   : Đội P3 sẽ phải đối mặt với nhiều áp lực trong việc giữ vững thành tích, nhưng các thí sinh vẫn phải cố gắng.
+
+[106] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong vu dinh thang nguoi phu trach sap practice ba tran nhu phung chuyen gia ve thuong hieu nha tuyen dung tai bgsw viet nam
+    Dap an    : Ông Vũ Đình Thắng - người phụ trách SAP Practice; bà Trần Như Phụng - chuyên gia về thương hiệu nhà tuyển dụng tại BGSW Việt Nam.
+    Mo hinh   : Ông Vũ Đình Thăng, người phụ trách SAC practice; Bà Trần Như Phụng, chuyên gia về thương hiệu nhà tuyển dụng tại BGSW Việt Nam.
+
+[107] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hcm kien thuc ma kim chi da tiep thu tai truong dai hoc cong nghe thong tin dhqghcm uit da tao nen tang vung chac cho viec thich nghi va hoc tap cua co ay tai canada den nay
+    Dap an    : HCM. Kiến thức mà Kim Chi đã tiếp thu tại trường Đại học Công nghệ Thông tin ĐHQG-HCM (UIT) đã tạo nền tảng vững chắc cho việc thích nghi và học tập của cô ấy tại Canada. Đến nay.
+    Mo hinh   : HCM. Kiến thức mà Kim Chi đã tiếp thu tại Trường Đại học Công nghệ Thông tin, ĐHQG-HCM (UIT) đã tạo nền tảng vững chắc cho việc thích nghi và học tập của cô ấy tại Canada đến nay.
+
+[108] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : luon co co hoi de theo duoi dam me khong bao gio la qua muon
+    Dap an    : Luôn có cơ hội để theo đuổi đam mê, không bao giờ là quá muộn.
+    Mo hinh   : Luôn có cơ hội để theo đuổi đam mê, không bao giờ là quá muộn.
+
+[109] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai do co cac tap doan nanya tech
+    Dap an    : Tại đó có các tập đoàn Nanya Tech.
+    Mo hinh   : Tại đó, có các tập đoàn Nanya Tech.
+
+[110] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : chung ta se thao luan ve du an va cach thuc de tiep tuc chuong trinh hop tac
+    Dap an    : Chúng ta sẽ thảo luận về dự án và cách thức để tiếp tục chương trình hợp tác.
+    Mo hinh   : Chúng ta sẽ thảo luận về dự án và cách thức để tiếp tục chương trình hợp tác.
+
+[111] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hon nua dieu phuong cung phai doi dien voi mot so kho khan trong viec hoa nhap van hoa va thiet lap moi quan he dong nghiep
+    Dap an    : Hơn nữa, Diệu Phương cũng phải đối diện với một số khó khăn trong việc hòa nhập văn hóa và thiết lập mối quan hệ đồng nghiệp.
+    Mo hinh   : Hơn nữa, điều phương cũng phải đối diện với một số khó khăn trong việc nhập văn hóa và thiết lập mối quan hệ đồng nghiệp.
+
+[112] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguyẽn tran minh anh chuyen mon khoa hoc may tinh 10
+    Dap an    : Nguyễn Trần Minh Anh - Chuyên môn: Khoa học máy tính 10.
+    Mo hinh   : Nguyễn Trần Minh Anh - Chuyên môn Khoa học Máy tính: 10.
+
+[113] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : so luong chuong trinh dao tao duoc kiem dinh cua dhqghcm la cao nhat ca nuoc voi khoang 126 chuong trinh dat tieu chuan quoc te
+    Dap an    : Số lượng chương trình đào tạo được kiểm định của ĐHQG-HCM là cao nhất cả nước, với khoảng 126 chương trình đạt tiêu chuẩn quốc tế.
+    Mo hinh   : Số lượng chương trình đào tạo được kiểm định của ĐHQG-HCM là cao nhất cả nước, với khoảng 126 chương trình đạt tiêu chuẩn quốc tế.
+
+[114] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqghcm luon hieu ro tam quan trong cua viec dong gop vao cong tac ly luan chung cua trung uong va cac dia phuong
+    Dap an    : ĐHQG-HCM luôn hiểu rõ tầm quan trọng của việc đóng góp vào công tác lý luận chung của trung ương và các địa phương.
+    Mo hinh   : ĐHQG-HCM luôn hiểu rõ tầm quan trọng của việc đóng góp vào công tác lý luận chung của Trung ương và các địa phương.
+
+[115] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ngoai ra uit se gioi thieu cac san pham nghien cuu nhu nhan dien khuon mat de diem danh tu dong doc thong tin tu giay to ca nhan va van ban hanh chinh he thong giam sat qua camera he thong dem xe cho giao thong thong minh
+    Dap an    : Ngoài ra, UIT sẽ giới thiệu các sản phẩm nghiên cứu như: Nhận diện khuôn mặt để điểm danh - Tự động đọc thông tin từ giấy tờ cá nhân và văn bản hành chính - Hệ thống giám sát qua camera - Hệ thống đếm xe cho giao thông thông minh.
+    Mo hinh   : Ngoài ra, UIT sẽ giới thiệu các sản phẩm nghiên cứu như nhận diện khuôn mặt để điểm danh, tự động đọc thông tin từ giấy tờ cá nhân và văn bản hành chính hệ thống giám sát qua camera hệ thống đèn xe cho giao thông thông minh.
+
+[116] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : hong nhung co y dinh hoc hoi tu cac chuyen gia va trai nghiem mot cach lam viec moi me
+    Dap an    : Hồng Nhung có ý định học hỏi từ các chuyên gia và trải nghiệm một cách làm việc mới mẻ.
+    Mo hinh   : Hồng Nhung có ý định học hỏi từ các chuyên gia và trải nghiệm một cách làm việc mới mẻ.
+
+[117] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chinh nhung yeu cau ve ngoai ngu va chuyen mon trong nhung nam hoc tai uit da dinh hinh quyet dinh du hoc cua anh
+    Dap an    : Chính những yêu cầu về ngoại ngữ và chuyên môn trong những năm học tại UIT đã định hình quyết định du học của anh.
+    Mo hinh   : Chính những yêu cầu về ngoại ngữ và chuyên môn trong những năm học tại UIT đã định hình quyết định du học của Anh.
+
+[118] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : du lieu duoc bao ve ky nang thuc hanh atttvoi kien thuc va ky nang vung ben
+    Dap an    : Dữ liệu được bảo vệ... Kỹ năng thực hành ATTTVới kiến thức và kỹ năng vững bền.
+    Mo hinh   : Dữ liệu được bảo vệ kỹ năng thực hành AOT-T voi kiến thức và kỹ năng vững bền.
+
+[119] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : le phi phong o se duoc mien cho sinh vien khuyet tat va giam 50% cho sinh vien mo coi
+    Dap an    : Lệ phí phòng ở sẽ được miễn cho sinh viên khuyết tật và giảm 50% cho sinh viên mồ côi.
+    Mo hinh   : Lệ phí phòng ở sẽ được miễn cho sinh viên khuyết tật và giảm 50% cho Sinh viên mở coi.
+
+[120] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nii thiet lap ket noi quoc te thong qua cac chuong trinh nghien cuu hop tac internship va hoc bong cho sinh vien phd
+    Dap an    : NII thiết lập kết nối quốc tế thông qua các chương trình nghiên cứu hợp tác, internship và học bổng cho sinh viên PhD.
+    Mo hinh   : ANU thiết lập kết nối quốc tế thông qua các chương trình nghiên cứu, hợp tác internship và học bổng cho sinh viên PhD.
+
+[121] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec thu thap va trich xuat doi hoi nhieu chi phi va trang thiet bi dac thu do day la mot don vi nghien cuu nuoc ngoai anh se phai doi mat voi mot so kho khan nhat dinh
+    Dap an    : Việc thu thập và trích xuất đòi hỏi nhiều chi phí và trang thiết bị đặc thù. Do đây là một đơn vị nghiên cứu nước ngoài, anh sẽ phải đối mặt với một số khó khăn nhất định.
+    Mo hinh   : Việc thu thập và trích xuất đòi hỏi nhiều chi phí và trang thiết bị đặc thù, do đây là một đơn vị nghiên cứu nước ngoài, anh sẽ phải đối mặt với một số khó khăn nhất định.
+
+[122] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : giup thi sinh co kha nang the hien va mo rong kien thuc cua ho
+    Dap an    : Giúp thí sinh có khả năng thể hiện và mở rộng kiến thức của họ.
+    Mo hinh   : Giúp thí sinh có khả năng thể hiện và mở rộng kiến thức của họ.
+
+[123] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nho vao kien thuc da tiep thu tai uit luan de dang thich nghi voi moi truong hoc tap o nhat ban
+    Dap an    : Nhờ vào kiến thức đã tiếp thu tại UIT, Luân dễ dàng thích nghi với môi trường học tập ở Nhật Bản.
+    Mo hinh   : Nhờ vào kiến thức đã tiếp thu tại UIT, luận đề đang thích nghi với môi trường học tập ở Nhật Bản.
+
+[124] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : theo chia se cua anh dinh thi anh thi da phat bieu
+    Dap an    : Theo chia sẻ của anh Đình Thi, anh Thi đã phát biểu.
+    Mo hinh   : Theo chia sẻ của Anh Đình Thị, Anh Thị đã phát biểu.
+
+[125] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : den voi nhung cuoc thi lon nhu icpc quoc gia ky thi chon hoc sinh gioi cap quoc gia hsgqg va duong len dinh olympia
+    Dap an    : Đến với những cuộc thi lớn như ICPC quốc gia, kỳ thi chọn học sinh giỏi cấp quốc gia (HSGQG) và Đường lên đỉnh Olympia.
+    Mo hinh   : Đến với những cuộc thi lớn như ICPC quốc gia, kỳ thi chọn học sinh giỏi cấp quốc gia ( HSGQG) và đường lên đỉnh Olympia.
+
+[126] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nguoi nam sinh cung da cho biet them
+    Dap an    : Người nam sinh cũng đã cho biết thêm.
+    Mo hinh   : Người nam sinh cũng đã cho biết thêm.
+
+[127] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : viec em lot vao vong thi thang cua chuong trinh duong len dinh olympia khi hoc lop 11 la mot minh chung ro rang
+    Dap an    : Việc em lọt vào vòng thi tháng của chương trình Đường lên đỉnh Olympia khi học lớp 11 là một minh chứng rõ ràng.
+    Mo hinh   : Việc em lọt vào vòng thi tháng của chương trình 'Đường lên đỉnh Olympia' khi học lớp 11 là một minh chứng rõ ràng.
+
+[128] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : kinh nghiem se duoc tich luy qua moi hoat dong doan hoi trong thoi sinh vien
+    Dap an    : Kinh nghiệm sẽ được tích lũy qua mỗi hoạt động Đoàn - Hội trong thời sinh viên.
+    Mo hinh   : Kinh nghiệm sẽ được tích lũy qua mọi hoạt động Đoàn - Hội trong thời sinh viên.
+
+[129] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : bach khoa university in hanoi
+    Dap an    : Bach Khoa University in Hanoi.
+    Mo hinh   : Bách Khoa University in Hanoi.
+
+[130] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : muc thu nhap co the dao dong tu 2 500 den 3 000 usd moi thang 6070 trieu dong cong viec cua mot ky su thiet ke vi mach phuc tap hon
+    Dap an    : Mức thu nhập có thể dao động từ 2. 500 đến 3. 000 USD mỗi tháng (60-70 triệu đồng). 'Công việc của một kỹ sư thiết kế vi mạch phức tạp hơn, '
+    Mo hinh   : Mức thu nhập có thể dao động từ 2. 500 đến 3. 000 USD mỗi tháng, 60-65 triệu đồng. Công việc của một kỹ sư thiết kế vi mạch phức tạp hơn.
+
+[131] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : sinh vien thuong co trach nhiem trong cac linh vuc thiet ke vi mach kiem thu va dong goi
+    Dap an    : Sinh viên thường có trách nhiệm trong các lĩnh vực thiết kế vi mạch, kiểm thử và đóng gói.
+    Mo hinh   : Sinh viên thường có trách nhiệm trong các lĩnh vực thiết kế vi mạch, kiểm thử và đóng gói.
+
+[132] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khang dang huong toi viec lam quen voi chuong trinh hoc va hoan thanh tot nam hoc theo yeu cau cua nha truong trong nam toi ben canh do khang cung chia se “minh van dang phan van vi ngoai nganh ky thuat phan mem minh thuc su dam me tri tue nhan tao
+    Dap an    : Khang đang hướng tới việc làm quen với chương trình học và hoàn thành tốt năm học theo yêu cầu của Nhà trường trong năm tới. Bên cạnh đó, Khang cũng chia sẻ: “Mình vẫn đang phân vân vì ngoài ngành Kỹ thuật Phần mềm, mình thực sự đam mê trí tuệ nhân tạo.
+    Mo hinh   : Khang đang hướng tới việc làm quen với chương trình học và hoàn thành tốt năm học theo yêu cầu của nhà trường trong năm tới. Bên cạnh đó, Khang cũng chia sẻ: “Mình vẫn đang phân vân vì ngoài ngành kỹ thuật phần mềm, mình thực sự đam mê Trí tuệ nhân tạo.
+
+[133] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban co the lam quen voi nhieu ban be tu cac tinh thanh khac nhau tu do cai thien ky nang mem cho tuong lai theo phuong thao tuyen sinh uit xem them thong tin chi tiet tai truong dai hoc cong nghe thong tin la mot trung tam dao tao dai hoc
+    Dap an    : Bạn có thể làm quen với nhiều bạn bè từ các tỉnh thành khác nhau, từ đó cải thiện kỹ năng mềm cho tương lai. Theo Phương Thảo - Tuyển sinh UIT, xem thêm thông tin chi tiết tại: Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học.
+    Mo hinh   : Bạn có thể làm quen với nhiều bạn bè từ các tỉnh thành khác nhau, từ đó cải thiện kỹ năng mềm cho tương lai. Theo Phương Thảo - Tuyển sinh UIT. Xem thêm thông tin chi tiết tại: Trường Đại học Công nghệ Thông tin là một trung tâm đào tạo đại học.
+
+[134] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : dai hoc cong nghe thong tin da tro thanh mot truong dai hoc danh tieng trong linh vuc cong nghe thong tin – truyen thong va cac linh vuc lien quan tai khu vuc chau a link bai dung do la chi dao cua pgs
+    Dap an    : Đại học Công nghệ Thông tin đã trở thành một trường đại học danh tiếng trong lĩnh vực công nghệ thông tin – truyền thông và các lĩnh vực liên quan tại khu vực Châu Á. Link bài: dung: Đó là chỉ đạo của PGS.
+    Mo hinh   : Đại học Công nghệ Thông tin đã trở thành một trường đại học danh tiếng trong lĩnh vực công nghệ thông tin – truyền thông và các lĩnh vực liên quan tại khu vực Châu Á. Link bài: dung: Đó là chỉ đạo của PGS.
+
+[135] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : to chuc nam trong khu cong nghe cao khu vuc chinh cua tp thu duc
+    Dap an    : Tổ chức nằm trong Khu Công nghệ cao - khu vực chính của TP Thủ Đức.
+    Mo hinh   : Tổ chức nằm trong khu công nghệ cao, khu vực chính của TP Thủ Đức.
+
+[136] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tu do dhqghcm da phat huy duoc gia tri cot loi la xuat sac
+    Dap an    : Từ đó, ĐHQG-HCM đã phát huy được giá trị cốt lõi là xuất sắc.
+    Mo hinh   : Từ đó, ĐHQG-HCM đã phát huy được giá trị cốt lõi là xuất sắc.
+
+[137] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cac thi sinh tham gia cuoc thi chu yeu la nhung nguoi dang van hanh cac he thong cong nghe thong tin trong doanh nghiep
+    Dap an    : Các thí sinh tham gia cuộc thi chủ yếu là những người đang vận hành các hệ thống công nghệ thông tin trong doanh nghiệp.
+    Mo hinh   : Các thí sinh tham gia cuộc thi chủ yếu là những người đang vận hành các hệ thống công nghệ thông tin trong doanh nghiệp.
+
+[138] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : noi bat voi nhieu thanh tuu dhqghcm da tao ra nhung dau an quan trong
+    Dap an    : Nổi bật với nhiều thành tựu, ĐHQG-HCM đã tạo ra những dấu ấn quan trọng.
+    Mo hinh   : Nổi bật với nhiều thành tựu, ĐHQG-HCM đã tạo ra những dấu ấn quan trọng.
+
+[139] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : 80 trieu dong hoc sinh dat giai o cac mon toan ly hoa van va tieng anh se nhan duoc 60 trieu dong cho giai ba va 40 trieu dong cho giai khuyen khich
+    Dap an    : 80 triệu đồng. Học sinh đạt giải ở các môn toán, lý, hóa, văn, và tiếng Anh sẽ nhận được 60 triệu đồng cho giải ba và 40 triệu đồng cho giải khuyến khích.
+    Mo hinh   : 80 triệu đồng, học sinh đạt giải ở các môn Toán, Lý,, Văn và Tiếng Anh, sẽ nhận được 60 triệu đồng cho giải Ba và 40 triệu động cho giải Khuyến khích.
+
+[140] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nam tan sinh vien khac da gianh giai nhi trong ky thi chon hoc sinh gioi quoc gia mon tin hoc nhan 350 trieu dong va hoc bong luu tru tai ky tuc xa dai hoc quoc gia tp hcm nhung tan sinh vien dat giai ba
+    Dap an    : Năm tân sinh viên khác đã giành giải nhì trong kỳ thi chọn học sinh giỏi quốc gia môn tin học, nhận 350 triệu đồng và học bổng lưu trú tại ký túc xá Đại học Quốc gia TP. HCM. Những tân sinh viên đạt giải ba.
+    Mo hinh   : Năm tân sinh viên khác đã giành giải Nhì trong kỳ thi chọn học sinh giỏi quốc gia môn Tin học, nhận 350 triệu đồng và học bổng lưu trú tại Ký túc xá Đại học Quốc gia TP. HCM, những tân sinh vien đạt giải Ba.
+
+[141] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong vu hai quan kien nghi pho thu tuong nhanh chong ban hanh nghi dinh lien quan den dhqg va quy che to chuc hoat dong cua dhqg va cac co so giao duc dai hoc thanh vien voi muc tieu tang quyen tu chu
+    Dap an    : Ông Vũ Hải Quân kiến nghị Phó Thủ tướng nhanh chóng ban hành nghị định liên quan đến ĐHQG và Quy chế tổ chức, hoạt động của ĐHQG và các cơ sở giáo dục đại học thành viên, với mục tiêu tăng quyền tự chủ.
+    Mo hinh   : Ông Vũ Hải Quân, kiến nghị Phó Thủ tướng nhanh chóng ban hành Nghị định liên quan đến ĐHQG và quy chế tổ chức hoạt động của ĐHQGH và các cơ sở giáo dục đại học thành viên, với mục tiêu tăng quyền tự chủ.
+
+[142] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : do do pho thu tuong khang dinh rang hai dhqg
+    Dap an    : Do đó, Phó Thủ tướng khẳng định rằng hai ĐHQG.
+    Mo hinh   : Do đó, Phó Thủ tướng khẳng định rằng hai ĐHQG.
+
+[143] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : truong dai hoc cong nghe thong tin da khang dinh duoc vi tri cua minh nhu mot truong dai hoc co uy tin trong linh vuc cong nghe thong tin – truyen thong o khu vuc chau a
+    Dap an    : Trường Đại học Công nghệ Thông tin đã khẳng định được vị trí của mình như một trường đại học có uy tín trong lĩnh vực công nghệ thông tin – truyền thông ở khu vực Châu Á.
+    Mo hinh   : Trường Đại học Công nghệ Thông tin đã khẳng định được vị trí của mình như một trường đại học có uy tín trong lĩnh vực công nghệ thông tin – truyền thông ở khu vực Châu Á.
+
+[144] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : pho thu tuong tran hong ha da dan dat doan cong tac trong chuyen tham va lam viec voi truong dai hoc cong nghe thong tin thuoc dai hoc quoc gia thanh pho ho chi minh
+    Dap an    : Phó Thủ tướng Trần Hồng Hà đã dẫn dắt đoàn công tác trong chuyến thăm và làm việc với Trường Đại học Công nghệ Thông tin, thuộc Đại học Quốc gia Thành phố Hồ Chí Minh.
+    Mo hinh   : Phó Thủ tướng Trần Hồng Hà đã dẫn dắt đoàn công tác trong chuyến thăm và làm việc với Trường Đại học Công nghệ Thông tin, thuộc Đại học Quốc gia Thành phố Hồ Chí Minh.
+
+[145] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ong my cho hay do ngoc thao nguyen ban cua ong
+    Dap an    : Ông Mỹ cho hay. Đỗ Ngọc Thảo Nguyên, bạn của ông.
+    Mo hinh   : Ông Mỹ cho hay, Đỗ Ngọc Thảo, nguyên bạn của ông.
+
+[146] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gs ho teck hua ha duc hoa hieu truong ntu nhan manh rang su hop tac nay la bang chung cho moi quan he ngay cang khang khit giua singapore va viet nam da va dang duoc cung co trong nhung nam qua
+    Dap an    : GS Ho Teck Hua (Hà Đức Hoa) - Hiệu trưởng NTU, nhấn mạnh rằng sự hợp tác này là 'bằng chứng cho mối quan hệ ngày càng khăng khít giữa Singapore và Việt Nam, đã và đang được củng cố trong những năm qua. '
+    Mo hinh   : GS. Ho Teck Hua (Hà Đức Hoa) - Hiệu trưởng NTU, nhấn mạnh rằng sự hợp tác này là bằng chứng cho mối quan hệ ngày càng kháng khít giữa Singapore và Việt Nam, đã và đang được củng cố trong những năm qua.
+
+[147] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hoi dong lien nganh cong nghe sinh hoc y sinh suc khoe dhqghcm co gs ts dang mau chien lam chu tich
+    Dap an    : Hội đồng liên ngành Công nghệ Sinh học - Y sinh - Sức khỏe ĐHQG-HCM có GS. TS Đặng Mậu Chiến làm Chủ tịch;
+    Mo hinh   : Hội đồng liên ngành Công nghệ Sinh học - Y sinh - Sức ĐHQG-HCM có GS. TS. Đặng Mẫu Chiến làm Chủ tịch.
+
+[148] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : pgs la mot phan cua truong dai hoc cong nghe thong tin dhqghcm
+    Dap an    : PGS. là một phần của Trường Đại học Công nghệ Thông tin ĐHQG-HCM.
+    Mo hinh   : PGS là một phần của Trường Đại học Công nghệ Thông tin, ĐHQG-HCM.
+
+[149] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : theo do 99 suat hoc bong da duoc trao cho dhqghcm
+    Dap an    : Theo đó, 99 suất học bổng đã được trao cho ĐHQG-HCM.
+    Mo hinh   : Theo đó, 99 suất học bổng đã được trao cho ĐHQG-HCM.
+
+[150] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nho vay su giao tiep va chia se giua cac the he tro nen manh me hon
+    Dap an    : Nhờ vậy, sự giao tiếp và chia sẻ giữa các thế hệ trở nên mạnh mẽ hơn.
+    Mo hinh   : Nhờ vậy, sự giao tiếp và chia sẻ giữa các thế hệ trở nên mạnh mẽ hơn.
+
+[151] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cung co su quan tam den chuong trinh dao tao
+    Dap an    : Cũng có sự quan tâm đến chương trình đào tạo.
+    Mo hinh   : Củng cố sự quan tâm đến chương trình đào tạo.
+
+[152] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ket qua co the khong nhu y nhung toi van muon cam on cac ban vi da luon phan dau khong ngung trong thoi gian qua
+    Dap an    : Kết quả có thể không như ý, nhưng tôi vẫn muốn cảm ơn các bạn vì đã luôn phấn đấu không ngừng trong thời gian qua.
+    Mo hinh   : Kết quả có thể không như ý, nhưng tôi vẫn muốn cảm ơn các bạn vì đã luôn phấn đấu không ngừng trong thời gian qua.
+
+[153] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tin tuc truong dh cong nghe thong tin dhqghcm da cong bo diem chuan trung tuyen nam 2023 theo phuong thuc xet tuyen dua tren ket qua thi tot nghiep thpt nam 2023 nganh tri tue nhan tao dat diem cao nhat voi 27 8 diem tiep theo la khoa hoc du lieu voi 27 1 diem
+    Dap an    : Tin tức: Trường ĐH Công nghệ thông tin ĐHQG-HCM đã công bố điểm chuẩn trúng tuyển năm 2023 theo phương thức xét tuyển dựa trên kết quả thi tốt nghiệp THPT năm 2023. Ngành Trí tuệ Nhân tạo đạt điểm cao nhất với 27, 8 điểm, tiếp theo là Khoa học Dữ liệu với 27, 1 điểm.
+    Mo hinh   : Tin tức, Trường ĐH Công nghệ Thông tin ĐHQG-HCM đã công bố Điểm chuẩn trúng tuyển năm 2023 theo phương thức xét tuyển dựa trên kết quả thi tốt nghiệp THPT. Năm 2023, ngành Trí tuệ nhân tạo đạt điểm cao nhất với 27. 8 điểm, tiếp theo là Khoa học dữ liệu với 27. 1 điểm.
+
+[154] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dac biet la luc luong lao dong chat luong tot thuc day nghien cuu va chuyen giao
+    Dap an    : Đặc biệt là lực lượng lao động chất lượng tốt; thúc đẩy nghiên cứu và chuyển giao.
+    Mo hinh   : Đặc biệt là lực lượng lao động chất lượng tốt, thúc đẩy nghiên cứu và chuyển giao.
+
+[155] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : den nay dhqghcm da co 126 chuong trinh dao tao duoc xac nhan dat tieu chuan kiem dinh quoc te
+    Dap an    : Đến nay, ĐHQG-HCM đã có 126 chương trình đào tạo được xác nhận đạt tiêu chuẩn kiểm định quốc tế.
+    Mo hinh   : Đến nay, ĐHQG-HCM đã có 126 chương trình đào tạo được xác nhận đạt tiêu chuẩn kiểm định quốc tế.
+
+[156] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : nha nuoc can phai cap bu cho phan ngan sach chua duoc cai thien
+    Dap an    : Nhà nước cần phải cấp bù cho phần ngân sách chưa được cải thiện.
+    Mo hinh   : Nhà nước cần phải cấp bù cho phần ngân sách chưa được cải thiện.
+
+[157] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : uu tien phat trien giao duc xem viec trong nguoi la nhiem vu chu yeu
+    Dap an    : Ưu tiên phát triển giáo dục, xem việc 'trồng người' là nhiệm vụ chủ yếu.
+    Mo hinh   : Ưu tiên phát triển giáo dục, xem việc trọng người là nhiệm vụ chủ yếu.
+
+[158] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : vay von cho sinh vien hien tai con bi gioi han tu doi tuong den quy trinh thuc hien
+    Dap an    : Vay vốn cho sinh viên hiện tại còn bị giới hạn, từ đối tượng đến quy trình thực hiện.
+    Mo hinh   : vay vốn cho sinh viên hiện tại còn bị giới hạn từ đối tượng đến quy trình thực hiện.
+
+[159] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : em da lam gi de no luc bat dau tu lop 10 em da dinh huong dau dai hoc qua ky thi hsg qg do do em da tap trung vao mon tin hoc ngay tu dau
+    Dap an    : Em đã làm gì để nỗ lực? Bắt đầu từ lớp 10, em đã định hướng đậu đại học qua kỳ thi HSG QG, do đó em đã tập trung vào môn tin học ngay từ đầu.
+    Mo hinh   : Em đã làm gì để nỗ lực? Bắt đầu từ lớp 10, em đã định hướng đầu đại học qua kỳ thi HSG QG, do đó em đã tập trung vào môn Tin học ngay từ đầu.
+
+[160] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : de huong den viec duoc danh gia chinh thuc ben ngoai asiin
+    Dap an    : Để hướng đến việc được đánh giá chính thức bên ngoài ASIIN.
+    Mo hinh   : Để hướng đến việc được đánh giá chính thức, bên ngoài ASIIN.
+
+[161] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : can thiet phai tang cuong khong gian tu hoc va phat trien doi ngu nham mo rong thoi gian phuc vu sinh vien
+    Dap an    : Cần thiết phải tăng cường không gian tự học và phát triển đội ngũ nhằm mở rộng thời gian phục vụ sinh viên.
+    Mo hinh   : Cần thiết phải tăng cường không gian tự học và phát triển đội ngũ nhằm mở rộng thời gian phục vụ sinh viên.
+
+[162] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : den nam lop 8 ban moi bat dau tim hieu ve lap trinh sau do khong lau khanh da duoc chon vao doi tuyen hoc sinh gioi cua tinh va dat giai nhi trong ky thi hoc sinh gioi quoc gia mon tin hoc nam 2019
+    Dap an    : Đến năm lớp 8, bạn mới bắt đầu tìm hiểu về lập trình. Sau đó không lâu, Khánh đã được chọn vào đội tuyển học sinh giỏi của tỉnh và đạt giải Nhì trong kỳ thi học sinh giỏi quốc gia môn Tin học năm 2019.
+    Mo hinh   : Đến năm lớp 8, bạn mới bắt đầu tìm hiểu về lập trình. Sau đó, không lâu, Khánh đã được chọn vào đội tuyển học sinh giỏi của tỉnh và đạt giải nhì trong kỳ thi học sinh Giỏi quốc gia môn Tin học năm 2019.
+
+[163] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : voi tu cach la tan sinh vien kiet dang rat hao huc buoc vao uit ngoai ra ban ay co ke hoach hoan thien ky nang truoc khi nam hai ket thuc
+    Dap an    : Với tư cách là tân sinh viên, Kiệt đang rất háo hức bước vào UIT. Ngoài ra, bạn ấy có kế hoạch hoàn thiện kỹ năng trước khi năm hai kết thúc.
+    Mo hinh   : Với tư cách là tân sinh viên, Kiệt đang rất hào hứng bước vào UIT. Ngoài ra, bạn ấy có kế hoạch hoàn thiện kỹ năng trước khi năm hai kết thúc.
+
+[164] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cung trong cac cau lac bo va doi nhom cua truong thanh nhan tham gia rat tich cuc
+    Dap an    : Cũng trong các câu lạc bộ và đội nhóm của trường, Thành Nhân tham gia rất tích cực.
+    Mo hinh   : Cũng trong các câu lạc bộ và đội nhóm của Trường, thành nhân tham gia rất tích cực.
+
+[165] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : {sentence truong dai hoc cong nghe thong tin dhqghcm uit da co buoi lam viec voi dai dien cua to chuc phat trien nguon nhan luc & viec lam huredee tai phong e1 qua buoi trao doi hai ben da thao luan va dua ra ke hoach hop tac trong thoi gian toi }
+    Dap an    : {'sentence': 'Trường Đại học Công nghệ Thông tin ĐHQG-HCM (UIT) đã có buổi làm việc với đại diện của Tổ chức phát triển nguồn nhân lực & việc làm HUREDEE tại phòng E1. Qua buổi trao đổi, hai bên đã thảo luận và đưa ra kế hoạch hợp tác trong thời gian tới. '}
+    Mo hinh   : {'Sentence': 'Trường Đại học Công nghệ Thông tin, ĐHQG-HCM (UIT) đã có buổi làm việc với đại diện của Tổ chức Phát triển Nguồn nhân lực & Việc làm ( HUREDEE) tại phòng E1. Qua buổi trao đổi, hai bên đã thảo luận và đưa ra kế hoạch hợp tác trong thời gian tới. '}
+
+[166] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : van chua lam duoc nhung diem manh
+    Dap an    : Vẫn chưa làm được, những điểm mạnh.
+    Mo hinh   : Vẫn chưa làm được những điểm mạnh.
+
+[167] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : cac truong thanh vien dhqghcm va cac truong khac se thuc hien viec trao doi hoc thuat giua sinh vien thuc tap sinh va hoc gia dua tren cac mo hinh hop tac da duoc trien khai thanh cong
+    Dap an    : Các trường thành viên ĐHQG-HCM và các trường khác sẽ thực hiện việc trao đổi học thuật giữa sinh viên, thực tập sinh và học giả, dựa trên các mô hình hợp tác đã được triển khai thành công.
+    Mo hinh   : Các trường thành viên ĐHQG-HCM và các trường khác sẽ thực hiện việc trao đổi học thuật giữa sinh viên, thực tập sinh và học giả, dựa trên các mô hình hợp tác đã được triển khai thành công.
+
+[168] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : khi ban phat hien ra dam me hay no luc de thanh thao va chinh phuc no hay song theo cau noi ay
+    Dap an    : Khi bạn phát hiện ra đam mê, hãy nỗ lực để thành thạo và chinh phục nó - Hãy sống theo câu nói ấy.
+    Mo hinh   : Khi bạn phát hiện ra đam mê, hãy nỗ lực để thành thạo và chinh phục nó. Hãy sống theo câu nói ấy.
+
+[169] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : ban co biet den ngoi truong nay qua nguon nao khong em lan dau nghe den uit thong qua co giao dan dat doi tuyen quoc gia va cac anh chi khoa truoc dang hoc tai uit co da chia se voi em ve cac chinh sach hoc bong cua truong danh cho hoc sinh gioi quoc gia mon tin hoc nhu em va em thay chung rat tot
+    Dap an    : Bạn có biết đến ngôi trường này qua nguồn nào không? Em lần đầu nghe đến UIT thông qua cô giáo dẫn dắt đội tuyển quốc gia và các anh chị khóa trước đang học tại UIT. Cô đã chia sẻ với em về các chính sách học bổng của trường dành cho học sinh giỏi quốc gia môn Tin học như em, và em thấy chúng rất tốt.
+    Mo hinh   : Bạn có biết đến ngôi trường này qua nguồn nào không? Em lần đầu nghe đến UIT thông qua cô giáo dẫn dắt đội tuyển quốc gia và các anh chị trước đang học tại UIT, cô đã chia sẻ với em về các chính sách học bổng của trường dành cho học sinh giỏi quốc gia môn Tin học. Như em và em thấy chúng rất tốt.
+
+[170] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chuong trinh dao tao nay se lan luot phat trien 5 ky nang nhan dien
+    Dap an    : Chương trình đào tạo này sẽ lần lượt phát triển 5 kỹ năng: Nhận diện.
+    Mo hinh   : Chương trình đào tạo này sẽ lần lượt phát triển 5 kỹ năng nhận diện.
+
+[171] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ngoai ra ban cung bi thu hut boi chinh sach hoc bong
+    Dap an    : Ngoài ra, bạn cũng bị thu hút bởi chính sách học bổng.
+    Mo hinh   : Ngoài ra, bạn cũng bị thu hút bởi chính sách học bổng.
+
+[172] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : gia dinh nay thuoc ho ngheo can ngheo va dang trai qua hoan canh kho khan
+    Dap an    : Gia đình này thuộc hộ nghèo, cận nghèo và đang trải qua hoàn cảnh khó khăn.
+    Mo hinh   : Gia đình này thuộc hộ nghèo, cận nghèo và đang trải qua hoàn cảnh khó khăn.
+
+[173] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : giai thuong ma quoc cuong da dat duoc bao gom giai nhat cuoc thi lap trinh uit acm 2019 va giai y tuong sang tao
+    Dap an    : Giải thưởng mà Quốc Cường đã đạt được bao gồm Giải nhất cuộc thi lập trình UIT ACM 2019 và Giải ý tưởng sáng tạo.
+    Mo hinh   : Giải thưởng mà Quốc Cường đã đạt được bao gồm Giải Nhất cuộc thi lập trình UITcima 2019 và Giải Ý tưởng Sáng tạo.
+
+[174] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : la mot trung tam dao tao dai hoc truong dai hoc cong nghe thong tin cung ho tro toi trong viec soan thao thu de xuat va cac tai lieu lien quan
+    Dap an    : Là một trung tâm đào tạo đại học, Trường Đại học Công nghệ Thông tin cũng hỗ trợ tôi trong việc soạn thảo thư đề xuất và các tài liệu liên quan.
+    Mo hinh   : Là một trung tâm đào tạo đại học, Trường Đại học Công nghệ Thông tin cũng hỗ trợ tôi trong việc soạn thảo, thu, đề xuất và các tài liệu liên quan.
+
+[175] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ong quan cho biet rang dhqghcm se thuc hien mot so cong trinh quan trong vao cuoi nam nay va dau nam sau
+    Dap an    : Ông Quân cho biết rằng ĐHQG-HCM sẽ thực hiện một số công trình quan trọng vào cuối năm nay và đầu năm sau.
+    Mo hinh   : Ông Quân cho biết rằng ĐHQG-HCM sẽ thực hiện một số công trình quan trọng vào cuối năm nay và đầu năm sau.
+
+[176] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : theo ts nguyen the tai truong phong quan ly dao tao giam doc dhqghcm da nhan manh tam quan trong cua viec xay dung ke hoach hoc tap de 40 hoc vien deu dat chung chi vao cuoi khoa
+    Dap an    : Theo TS Nguyễn Thế Tài - Trưởng phòng Quản lý đào tạo, Giám đốc ĐHQG-HCM đã nhấn mạnh tầm quan trọng của việc xây dựng kế hoạch học tập để 40 học viên đều đạt chứng chỉ vào cuối khóa.
+    Mo hinh   : Theo TS Nguyễn Thế Tài - Trưởng phòng Quản lý Đào tạo, Giám đốc ĐHQG-HCM đã nhấn mạnh tầm quan trọng của việc xây dựng kế hoạch học tập để 40 học viên đều đạt chứng chỉ vào cuối.
+
+[177] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : mang may tinh va an toan thong tin la noi dung cua chuong trinh dao tao lien ket quoc te bang tieng anh
+    Dap an    : Mạng máy tính và An toàn thông tin là nội dung của chương trình đào tạo liên kết quốc tế bằng tiếng Anh.
+    Mo hinh   : Mạng máy tính và An toàn thông tin là nội dung của chương trình đào tạo liên kết quốc tế bằng tiếng Anh.
+
+[178] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dien dan tin hoc viet nam la noi quang minh thuong xuyen vao moi ngay de hoc hoi va tim bai tap ly thuyet
+    Dap an    : Diễn đàn Tin học Việt Nam là nơi Quang Minh thường xuyên vào mỗi ngày để học hỏi và tìm bài tập, lý thuyết.
+    Mo hinh   : Diễn đàn Tin học Việt Nam là nơi Quang Minh thường xuyên vào mỗi ngày để học hỏi và tìm bài tập lý thuyết.
+
+[179] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : tai tinh quang tri toi da bat dau hoc tu nam lop 10 khong phu long mong doi cua thay co
+    Dap an    : Tại tỉnh Quảng Trị, tôi đã bắt đầu học từ năm lớp 10. Không phụ lòng mong đợi của thầy cô.
+    Mo hinh   : Tại tỉnh Quảng Trị, tôi đã bắt đầu học từ năm lớp 10, không phụ lòng mong đợi của thầy cô.
+
+[180] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : le trao danh hieu nha giao uu tu ngut do dhqghcm to chuc da dien ra vao sang 247 tai nha dieu hanh
+    Dap an    : Lễ trao danh hiệu Nhà giáo ưu tú (NGƯT) do ĐHQG-HCM tổ chức đã diễn ra vào sáng 24/7 tại Nhà Điều hành.
+    Mo hinh   : Lễ trao danh hiệu Nhà giáo ưu tú NGƯT do ĐHQG-HCM tổ chức đã diễn ra vào sáng 24/3 tại Nhà Điều hành.
+
+[181] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : gs phan thi tuoi cho biet “khi toi con la nguoi quan ly
+    Dap an    : GS Phan Thị Tươi cho biết: “Khi tôi còn là người quản lý.
+    Mo hinh   : GS. Phan Thị Tươi cho biết: “Khi tôi còn là người quản lý.
+
+[182] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nguong chat luong dau vao la diem toi thieu ma thi sinh co the dang ky vao truong khong phai la diem chuan muc diem nhan ho so khong phai la diem chuan trung tuyen thi sinh nen tham khao diem chuan cua cac nam truoc de dieu chinh nguyen vong cho phu hop
+    Dap an    : Ngưỡng chất lượng đầu vào là điểm tối thiểu mà thí sinh có thể đăng ký vào trường, không phải là điểm chuẩn. Mức điểm nhận hồ sơ không phải là điểm chuẩn trúng tuyển, thí sinh nên tham khảo điểm chuẩn của các năm trước để điều chỉnh nguyện vọng cho phù hợp.
+    Mo hinh   : Ngưỡng chất lượng đầu vào là điểm tối thiểu mà thí sinh có thể đăng ký vào Trường, không phải là điểm chuẩn. Mức điểm nhận hồ sơ không phảilà điểm chuẩn trúng tuyển. Thí sinh nên tham khảo điểm chuẩn của các năm trước để điều chỉnh nguyện vọng cho phù hợp.
+
+[183] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : lien quan den dhqghcm ong quan da cho biet ve nghi quyet so 24 cua bo chinh tri ve phat trien kinh te xa hoi va bao dam quoc phong
+    Dap an    : Liên quan đến ĐHQG-HCM, ông Quân đã cho biết về Nghị quyết số 24 của Bộ Chính trị về phát triển kinh tế - xã hội và bảo đảm quốc phòng.
+    Mo hinh   : Liên quan đến ĐHQG-HCM, ông Quân đã cho biết về Nghị quyết số 24 của Bộ Chính trị về phát triển kinh tế - xã hội và bảo đảm quốc phòng.
+
+[184] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : hop tac cac chuong trinh phoi hop chung chua the hien dung tiem nang va nguyen vong cua lanh dao hai dhqg ong da noi “nhan dip hoi nghi giao ban hom nay
+    Dap an    : Hợp tác. Các chương trình phối hợp chung chưa thể hiện đúng tiềm năng và nguyện vọng của lãnh đạo hai ĐHQG. Ông đã nói: “Nhân dịp hội nghị giao ban hôm nay.
+    Mo hinh   : Hợp tác các chương trình phối hợp chung chưa thể hiện đúng tiềm năng và nguyện vọng của lãnh đạo hai ĐHQG. Ông đã nói: “Nhân dịp hội nghị giao ban hôm nay.
+
+[185] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : trong dien dan cac dai bieu da trao doi ve nhung thach thuc va co hoi cua tri tue nhan tao ai doi voi giao duc dac biet la giao duc dai hoc tai khu vuc chau a
+    Dap an    : Trong diễn đàn, các đại biểu đã trao đổi về những thách thức và cơ hội của trí tuệ nhân tạo (AI) đối với giáo dục, đặc biệt là giáo dục đại học tại khu vực châu Á.
+    Mo hinh   : Trong diễn đàn, các đại biểu đã trao đổi về những thách thức và cơ hội của trí tuệ nhân tạo (AI) đối với giáo dục, đặc biệt là giáo dục đại học tại khu vực Châu Á.
+
+[186] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dai dien tu dhqg seoul han quoc va dhqg ha noi cung nhau lam cau noi
+    Dap an    : Đại diện từ ĐHQG Seoul (Hàn Quốc) và ĐHQG Hà Nội cùng nhau làm cầu nối.
+    Mo hinh   : Đại diện từ ĐHQG Seoul, Hàn Quốc và ĐHQGH Hà Nội cùng nhau làm cầu nối.
+
+[187] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : boi duong nhan tai co kha nang chi dao
+    Dap an    : Bồi dưỡng nhân tài, có khả năng chỉ đạo.
+    Mo hinh   : Bồi dưỡng nhân tài có khả năng chỉ đạo.
+
+[188] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : chong tham nhung dong thoi loai bo tieu cuc
+    Dap an    : Chống tham nhũng, đồng thời loại bỏ tiêu cực.
+    Mo hinh   : Trong thăm những đồng thời loại bộ tiêu cực.
+
+[189] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqghcm da hoan thanh tot cac nhiem vu da duoc giao trong ke hoach qua do dhqghcm tiep tuc khang dinh vi the cua minh trong he thong giao duc dai hoc tai viet nam va tren the gioi” theo chanh van phong dhqghcm
+    Dap an    : ĐHQG-HCM đã hoàn thành tốt các nhiệm vụ đã được giao trong kế hoạch. Qua đó, ĐHQG-HCM tiếp tục khẳng định vị thế của mình trong hệ thống giáo dục đại học tại Việt Nam và trên thế giới”, theo Chánh Văn phòng ĐHQG-HCM.
+    Mo hinh   : ĐHQG-HCM đã hoàn thành tốt các nhiệm vụ đã được giao trong kế hoạch. Qua đó, ĐHQg-HCM tiếp tục khẳng định vị thế của mình trong hệ thống giáo dục đại học tại Việt Nam và trên thế giới”, theo Chánh Văn phòng ĐHQGH-HCM.
+
+[190] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truong dh cong nghe thong tin to chuc hoi thao khoa hoc voi chu de mo hinh dai hoc chia se loi ich tu su hop tac chia se nguon hoc lieu
+    Dap an    : Trường ĐH Công nghệ Thông tin tổ chức hội thảo khoa học với chủ đề 'Mô hình đại học chia sẻ - lợi ích từ sự hợp tác chia sẻ nguồn học liệu'.
+    Mo hinh   : Trường ĐH Công nghệ Thông tin tổ chức Hội thảo khoa học với chủ đề 'Mở hình Đại học chia sẻ lợi ích từ sự hợp tác chia sẻ nguồn học liệu'.
+
+[191] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : tim hieu ve su tuoi moi va ve dep cua cac vung dat khac nhau chia se ve nhung thanh tuu hoc tap cua minh
+    Dap an    : Tìm hiểu về sự tươi mới và vẻ đẹp của các vùng đất khác nhau. Chia sẻ về những thành tựu học tập của mình.
+    Mo hinh   : Tìm hiểu về sự tươi mới và vẻ đẹp của các vùng đất khác nhau. Chia sẻ về những thành tựu học tập của mình.
+
+[192] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : neu co chuyen buon hay that bai toi se chia se voi ban be hoac di choi de cam thay tot hon
+    Dap an    : Nếu có chuyện buồn hay thất bại, tôi sẽ chia sẻ với bạn bè hoặc đi chơi để cảm thấy tốt hơn.
+    Mo hinh   : Nếu có chuyện buồn hay thất bại, tôi sẽ chia sẻ với bạn bè hoặc đi chơi để cảm thấy tốt hơn.
+
+[193] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : cac truong thanh vien cung nhau thao luan va phe duyet cac du an hoat dong hop tac
+    Dap an    : Các trường thành viên cùng nhau thảo luận và phê duyệt các dự án, hoạt động, hợp tác.
+    Mo hinh   : Các trường thành viên cùng nhau thảo luận và phê duyệt các dự án hoạt động hợp tác.
+
+[194] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : khu cong nghe phan mem co quy mo khoang 19 27 hecta
+    Dap an    : Khu Công nghệ Phần mềm có quy mô khoảng 19, 27 hecta.
+    Mo hinh   : Khu Công nghệ Phần mềm có quy mô khoảng 19, 27 hecta.
+
+[195] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ba dien gia chinh co tieng tam
+    Dap an    : Ba diễn giả chính có tiếng tăm.
+    Mo hinh   : Ba diễn giả chính có tiếng tăm.
+
+[196] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : vao nam hoc moi uiters se co cho de xe trong khu vuc co mai che
+    Dap an    : Vào năm học mới, UITers sẽ có chỗ để xe trong khu vực có mái che.
+    Mo hinh   : Vào năm học mới, UITers sẽ có chỗ để xe trong khu vực có mái che.
+
+[197] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : nhung vuong mac hien tai cho phep trien khai cac co che va chinh sach moi de tao ra khong gian tu chu
+    Dap an    : Những vướng mắc hiện tại cho phép triển khai các cơ chế và chính sách mới để tạo ra không gian tự chủ.
+    Mo hinh   : Những vòng móc hiện tại cho phép triển khai các cơ chế và chính sách mới để tạo ra không gian tự chủ.
+
+[198] (khong_quy_nhan)  ket qua: DUNG
+    ASR goc   : ong da goi y ban dao tao thu thap y kien dong gop va lam bao cao de trinh ban giam doc dhqghcm xin phep trien khai
+    Dap an    : Ông đã gợi ý Ban Đào tạo thu thập ý kiến đóng góp và làm báo cáo để trình Ban Giám đốc ĐHQG-HCM xin phép triển khai.
+    Mo hinh   : Ông đã gợi ý Ban Đào tạo thu thập ý kiến đóng góp và làm báo cáo để trình Ban Giám đốc ĐHQG-HCM xin phép triển khai.
+
+[199] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : truong dai hoc cong nghe thong tin xin chuc mung sinh vien le thi minh anh vi da xuat sac dat chung chi jlpt n3 sinh vien le thi minh anh mssv 19521196 khoa khoa hoc va ky thuat thong tin chuc ban tiep tuc hoc tap va dat duoc nhieu thanh tich xuat sac hon nua
+    Dap an    : Trường Đại học Công nghệ Thông tin xin chúc mừng sinh viên Lê Thị Minh Ánh vì đã xuất sắc đạt chứng chỉ JLPT N3. Sinh viên: Lê Thị Minh Ánh, MSSV: 19521196 - Khoa: Khoa học và Kỹ thuật Thông tin. Chúc bạn tiếp tục học tập và đạt được nhiều thành tích xuất sắc hơn nữa!
+    Mo hinh   : Trường Đại học Công nghệ Thông tin xin chúc mừng sinh viên Lê Thị Minh Anh vì đã xuất sắc đạt chứng chỉ JLPT N3. Sinh viên Le Thi Minh Anh, MSSV 19521196, Khoa Khoa học và Kỹ thuật Thông tin, chúc bạn tiếp tục học tập và đạt được nhiều thành tích xuất sắc hơn nữa!
+
+[200] (khong_quy_nhan)  ket qua: GAN DUNG
+    ASR goc   : dhqghcm da tham gia chuong trinh hoc tap trai nghiem aun asean aelp lan thu 3 nam 2023 tai singapore do mang luoi cac dai hoc dong nam a aun phoi hop voi cac dai hoc thanh vien to chuc
+    Dap an    : ĐHQG-HCM đã tham gia Chương trình học tập trải nghiệm AUN ASEAN (AELP) lần thứ 3 năm 2023 tại Singapore, do Mạng lưới các đại học Đông Nam Á (AUN) phối hợp với các đại học thành viên tổ chức.
+    Mo hinh   : ĐHQG-HCM đã tham gia chương trình học tập trải nghiệm AUN ASEAN (AEC) lần thứ 3 năm 2023 tại Singapore, do Mạng lưới các Đại học Đông Nam Á (AUN) phối hợp với các đại học thành viên tổ chức.
+
+------------------------------------------------------------------------------
+Tong ket: 71 cau dung hoan toan | 129 cau gan dung | 0 cau khong sua duoc
+------------------------------------------------------------------------------
+
+==============================================================================
+HẾT LOG
+==============================================================================

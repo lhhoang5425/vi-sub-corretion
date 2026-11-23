@@ -2,21 +2,25 @@
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?logo=python&logoColor=white)](https://www.python.org/)
 [![PyTorch](https://img.shields.io/badge/PyTorch-2.0+-EE4C2C?logo=pytorch&logoColor=white)](https://pytorch.org/)
-[![HuggingFace](https://img.shields.io/badge/Model-ViT5%20%7C%20BARTpho-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/)
+[![HuggingFace](https://img.shields.io/badge/Model-BARTpho%20(bmd1905)-FFD21E?logo=huggingface&logoColor=black)](https://huggingface.co/bmd1905/vietnamese-correction-v2)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/lhhoang5425/vi-sub-corretion/pulls)
 
-Hệ thống phát hiện, sửa lỗi ngữ pháp, chính tả và khôi phục dấu câu cho phụ đề tiếng Việt từ nhận dạng giọng nói (ASR) sử dụng mô hình Sequence-to-Sequence (ViT5 / BARTpho).
+Hệ thống phát hiện, sửa lỗi ngữ pháp, chính tả và khôi phục dấu câu cho phụ đề tiếng Việt từ nhận dạng giọng nói (ASR Post-Correction) sử dụng mô hình Sequence-to-Sequence (`bmd1905/vietnamese-correction-v2`).
 
 ## Tổng quan
 
-Đầu ra của các hệ thống nhận dạng tiếng nói tự động (Whisper, Google STT, Wav2Vec2) thường gặp các vấn đề:
-- Sai từ đồng âm và dấu thanh (d/gi/r, l/n, ch/tr, s/x, hỏi/ngã).
-- Mất dấu câu và định dạng viết hoa.
+Đầu ra của các hệ thống nhận dạng tiếng nói tự động ASR (như OpenAI Whisper, Wav2Vec2) thường gặp các tật cố hữu:
+- Sai từ đồng âm và dấu thanh tiếng Việt (d/gi/r, l/n, ch/tr, s/x, hỏi/ngã).
+- Mất dấu câu và định dạng viết hoa đầu câu/danh từ riêng.
 - Ngữ nghĩa bị đứt đoạn do câu nói tự nhiên.
 
-Dự án này triển khai kiến trúc Sequence-to-Sequence (Seq2Seq) như một mô hình khử nhiễu (Denoising Model) để chuẩn hóa văn bản phụ đề mà vẫn bảo toàn chính xác mốc thời gian (timestamps) của tệp `.srt`.
+Dự án này triển khai kiến trúc Sequence-to-Sequence (Seq2Seq Transformer) như một mô hình khử nhiễu (Denoising Model) để chuẩn hóa văn bản phụ đề mà vẫn bảo toàn chính xác 100% mốc thời gian (timestamps) của tệp `.srt`.
+
+### Lộ trình 2 giai đoạn của đề tài
+- **Giai đoạn 1 (GD1 - Trọng tâm hiện tại):** Huấn luyện và tinh chỉnh mô hình Seq2Seq trên văn bản câu đơn, xử lý triệt để khôi phục dấu thanh, viết hoa, dấu ngắt câu và sửa lỗi ngữ âm trên bộ dữ liệu 100k câu chuẩn hóa (0% rò rỉ train–val, tích hợp 10% mẫu sạch đối chứng) và đánh giá trên bộ Gold Test v2 (857 mẫu).
+- **Giai đoạn 2 (GD2 - Kế hoạch mở rộng):** Tích hợp nối tiếp ngay sau đầu ra của Whisper ASR để tự động bóc tách và chuẩn hóa tệp phụ đề video thực tế `.srt` bảo toàn mốc thời gian.
 
 ## Kiến trúc hệ thống (Pipeline)
 
@@ -24,7 +28,7 @@ Dự án này triển khai kiến trúc Sequence-to-Sequence (Seq2Seq) như mộ
 [Video / Audio File]
          │
          ▼ (Whisper / ASR Engine)
-[Raw SRT Subtitle] (lỗi dấu câu, sai ngữ pháp, từ đồng âm)
+[Raw SRT Subtitle] (lỗi dấu câu, sai chính tả, từ đồng âm, viết thường)
          │
          ▼
 ┌────────────────────────────────────────────────────────┐
@@ -34,8 +38,9 @@ Dự án này triển khai kiến trúc Sequence-to-Sequence (Seq2Seq) như mộ
          ▼
 ┌────────────────────────────────────────────────────────┐
 │  2. Pipeline Khử Nhiễu (Seq2Seq Denoising Model)       │
-│     - Baseline: Rule-based & SymSpell Dictionary       │
-│     - Core Model: Fine-tuned ViT5-base / BARTpho       │
+│     - Baseline 1: Identity (Giữ nguyên ASR)            │
+│     - Baseline 2: Rule-based & SymSpell Dictionary     │
+│     - Core Model: Fine-tuned bmd1905 (BARTpho)         │
 └────────────────────────────────────────────────────────┘
          │
          ▼
@@ -103,35 +108,45 @@ Tài liệu API tương tác tại: `http://localhost:8000/docs`
 - `POST /api/v1/correct-srt-string`: Nhận chuỗi SRT và trả về chuỗi SRT sạch.
 - `POST /api/v1/correct-srt-file`: Tải lên tệp `.srt` và tải về tệp đã chuẩn hóa.
 
-## Cấu trúc dự án
+## Cấu trúc thư mục
 
 ```text
 .
 ├── api/
 │   └── main.py              # FastAPI server phục vụ tích hợp Web
 ├── data/
-│   ├── raw/                 # Dữ liệu phụ đề/transcript gốc
+│   ├── raw/                 # Dữ liệu phụ đề/transcript gốc (.srt)
 │   ├── synthetic/           # Dữ liệu sinh nhiễu nhân tạo cho huấn luyện
-│   └── gold_test/           # Bộ kiểm thử chuẩn gán nhãn thủ công
+│   └── gold_test/           # Bộ kiểm thử chuẩn đa chiều (5 suite, 857 mẫu)
 ├── src/
-│   ├── baseline/            # Mô hình đối chứng (Rule & Dictionary)
-│   ├── data_processing/     # Sinh nhiễu mô phỏng ASR và nạp dữ liệu
+│   ├── baseline/            # Mô hình đối chứng (Identity & Rule-based)
+│   ├── data_processing/     # Sinh nhiễu ASR (asr_hard) và xây dựng bộ test tái lập
+│   │   ├── noise_generator.py   # Bộ sinh nhiễu mô phỏng lỗi ngữ âm ASR
+│   │   ├── corpus_builder.py    # Xây dựng cặp câu song song từ corpus
+│   │   ├── dataset_loader.py    # Nạp và tiền xử lý dataset cho Trainer
+│   │   ├── build_basic_test.py  # Script tái lập Gold Test GD1
+│   │   ├── build_kichban_test.py# Script tái lập Gold Test GD2 từ SRT thật
+│   │   └── build_corpus_test.py # Script tái lập test trên corpus văn học
 │   ├── models/              # Huấn luyện và suy luận Seq2Seq
-│   ├── evaluation/          # Đánh giá WER, BLEU, Edit-F1
-│   └── srt_utils/           # Parser và ghép tệp SRT
-├── notebooks/               # Notebook thực nghiệm
-├── tests/                   # Kiểm thử đơn vị
-├── DE_CUONG_NLP28.md        # Đề cương đề tài
+│   ├── evaluation/          # Đánh giá đa chiều (WER, CER, BLEU, Exact Match, Edit-F1)
+│   └── srt_utils/           # Parser và ghép hoàn trả tệp SRT bảo toàn timestamps
+├── notebooks/               # Jupyter/Colab notebooks huấn luyện (Lần 1 -> Lần 5)
+├── tests/                   # Bộ kiểm thử đơn vị tự động (pytest)
+├── DE_CUONG_NLP28.md        # Đề cương chi tiết học phần NLP-28
 ├── requirements.txt
 └── README.md
 ```
 
-## Đánh giá hiệu năng
+## Kết quả Thực nghiệm Đột phá (Lần 5)
 
-Hệ thống được đánh giá trên tập dữ liệu kiểm thử độc lập thông qua 3 chỉ số chính:
-- **WER (Word Error Rate):** Đánh giá mức độ giảm tỷ lệ lỗi từ vựng.
-- **SacreBLEU:** Đo lường độ tương đồng ngữ nghĩa so với câu tham chiếu chuẩn.
-- **Edit-level Precision / Recall / F1:** Đo lường độ chính xác tại các vị trí chỉnh sửa (hạn chế hiện tượng over-correction).
+Đánh giá đối đầu trên tập kiểm thử chuẩn **Sample 25**:
+
+| Phương pháp | BLEU ↑ | WER (%) ↓ | CER (%) ↓ | Exact Match (%) ↑ | Edit-P (%) ↑ | Edit-R (%) ↑ | Edit-F1 (%) ↑ |
+| :--- | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
+| **Baseline 1 (Identity)** | 0.00 | 92.31% | 26.98% | 0.00% | 0.00% | 0.00% | 0.00% |
+| **Baseline 2 (Rule & Dict)** | 7.50 | 90.15% | 23.55% | 0.00% | 0.00% | 0.00% | 0.00% |
+| **Seq2Seq Lần 4 (100k legacy)** | 27.09 | 14.77% | — | — | 28.00% | 100.00% | 43.75% |
+| **Seq2Seq Lần 5 (bmd1905 Full)** | **100.00** | **6.15%** | **2.57%** | **52.00%** | **52.00%** | **100.00%** | **68.42%** |
 
 Chạy kiểm thử:
 ```bash
